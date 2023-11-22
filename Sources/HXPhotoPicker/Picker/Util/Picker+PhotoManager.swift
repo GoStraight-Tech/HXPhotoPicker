@@ -21,13 +21,17 @@ extension PhotoManager {
             if didRegisterObserver {
                 return
             }
+#if !targetEnvironment(macCatalyst)
             PHPhotoLibrary.shared().register(self)
+#endif
             didRegisterObserver = true
         }else {
             if !didRegisterObserver {
                 return
             }
+#if !targetEnvironment(macCatalyst)
             PHPhotoLibrary.shared().unregisterChangeObserver(self)
+#endif
             cameraAlbumResult = nil
             cameraAlbumResultOptions = nil
             didRegisterObserver = false
