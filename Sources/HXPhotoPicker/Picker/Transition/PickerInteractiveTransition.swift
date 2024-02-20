@@ -481,17 +481,17 @@ class PickerInteractiveTransition: UIPercentDrivenInteractiveTransition, UIGestu
                 previewViewController.photoToolbar.mask = nil
                 toVC?.photoToolbar.mask = nil
                 self.toView?.isHidden = false
+                if self.type == .dismiss, let picker {
+                    picker.pickerDelegate?.pickerController(
+                        picker,
+                        previewDismissComplete: previewViewController.currentPreviewIndex
+                    )
+                }
                 UIView.animate(withDuration: 0.2) {
                     previewView.alpha = 0
                 } completion: { _ in
                     previewView.isUserInteractionEnabled = true
                     previewView.removeFromSuperview()
-                    if self.type == .dismiss, let picker {
-                        picker.pickerDelegate?.pickerController(
-                            picker,
-                            previewDismissComplete: previewViewController.currentPreviewIndex
-                        )
-                    }
                     self.previewView = nil
                     self.previewViewController = nil
                     self.toView = nil
@@ -548,6 +548,9 @@ class PickerInteractiveTransition: UIPercentDrivenInteractiveTransition, UIGestu
         
         previewBackgroundColor = previewViewController.view.backgroundColor
         previewViewController.view.backgroundColor = .clear
+        if pickerViewController.isShowToolbar, previewViewController.isShowToolbar {
+            pickerViewController.photoToolbar.selectViewOffset = previewViewController.photoToolbar.selectViewOffset
+        }
          
         let containerView = transitionContext.containerView
         containerView.addSubview(pickerViewController.view)
@@ -651,6 +654,10 @@ class PickerInteractiveTransition: UIPercentDrivenInteractiveTransition, UIGestu
             self.previewViewController = previewViewController
             previewBackgroundColor = previewViewController.view.backgroundColor
             previewViewController.view.backgroundColor = .clear
+            if let isShowToolbar = pickerController.pickerViewController?.isShowToolbar,
+               isShowToolbar, previewViewController.isShowToolbar {
+                pickerController.pickerViewController?.photoToolbar.selectViewOffset = previewViewController.photoToolbar.selectViewOffset
+            }
             
             let containerView = transitionContext.containerView
             

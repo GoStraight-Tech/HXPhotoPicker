@@ -1,5 +1,91 @@
 # Release Notes
 
+## 4.1.6
+
+### Added
+
+- All icons can be customized with `HX.ImageResource`
+- All text content can be customized with `HX.TextManager`
+
+- Picker
+  - Set theme color with one click`config.themeColor = .systemBlue`[[620]](https://github.com/SilenceLove/HXPhotoPicker/issues/620)
+  - `PhotoAsset` adds `size` that can specify `UIImage`(https://github.com/SilenceLove/HXPhotoPicker/issues/624)
+  ```
+    /// targetSize: specify imageSize
+    /// targetMode: crop mode
+    let image = try await photoAsset.image(targetSize: .init(width: 200, height: 200), targetMode: .fill)
+  ```
+  - `PhotoAsset`Added content for display
+  ``` 
+    let thumImage = try await photoAsset.requesthumbnailImage() 
+    let previewImage = try await photoAsset.requestPreviewImage() 
+    let avAsset = try await photoAsset.requestAVAsset() 
+    let playerItem = try await photoAsset.requestPlayerItem() 
+    let livePhoto = try await photoAsset.requestLivePhoto()
+  ```
+
+- Camera
+  - Camera screen size can be customized`config.aspectRatio = ._9x16`
+  
+### Resolved
+
+- Editor
+  - After using the circular cropping box and rotating the crop, the content is offset when entering the editing interface again.
+  
+### Optimizer
+
+- Picker
+  - Quick slide display effect
+
+## 4.1.5
+
+### Resolved
+
+- [[618]](https://github.com/SilenceLove/HXPhotoPicker/issues/618)
+- [[616]](https://github.com/SilenceLove/HXPhotoPicker/issues/616)
+- [[614]](https://github.com/SilenceLove/HXPhotoPicker/issues/614)
+
+## 4.1.4
+
+### Resolved
+
+- [[613]](https://github.com/SilenceLove/HXPhotoPicker/issues/613)
+- [[612]](https://github.com/SilenceLove/HXPhotoPicker/issues/612)
+- [[610]](https://github.com/SilenceLove/HXPhotoPicker/issues/610)
+- [[591]](https://github.com/SilenceLove/HXPhotoPicker/issues/591)
+
+## 4.1.3
+
+### Resolved
+
+- Picker
+  - The list at the bottom of the preview interface may be messed up
+- [[605]](https://github.com/SilenceLove/HXPhotoPicker/issues/605)
+- [[599]](https://github.com/SilenceLove/HXPhotoPicker/issues/599)
+
+## 4.1.2
+
+### Added
+
+- Picker
+  - `PhotoToolbar` of photo list supports displaying selected list view
+  - `PhotoToolbar` in the preview interface adds a list view of preview data
+
+### Resolved
+
+- Picker
+  - When the original image is selected, quickly selecting/deselecting photos may cause a crash.
+  - When the album permissions restrict some photos, switching the album after selecting the photos causes the number displayed in the `PhotoToolbar` to be incorrect.
+  - The album list may be blank
+  - The problem of obtaining the wrong address suffix name when GIF is displayed as a static image
+  - Modification of the judgment logic of the maximum number of choices
+  
+### Optimizer
+
+- Picker
+  - `PhotoToolbar` safe area distance alignment when horizontal screen
+  - The logic of loading images in the preview interface is optimized, and the images are clearer during initial loading.
+
 ## 4.1.1
 
 ### Added

@@ -23,11 +23,11 @@ extension PhotoTools {
             status == .restricted {
             showAlert(
                 viewController: vc,
-                title: "无法访问相册中照片".localized,
-                message: "当前无照片访问权限，建议前往系统设置，\n允许访问「照片」中的「所有照片」。".localized,
-                leftActionTitle: "取消".localized,
+                title: .textNotAuthorized.alertTitle.text,
+                message: .textNotAuthorized.alertMessage.text,
+                leftActionTitle: .textNotAuthorized.alertLeftTitle.text,
                 leftHandler: nil,
-                rightActionTitle: "前往系统设置".localized
+                rightActionTitle: .textNotAuthorized.alertRightTitle.text
             ) { _ in
                 openSettingsURL()
             }
@@ -404,6 +404,8 @@ extension PhotoTools {
         config.previewView.bottomView.finishButtonBackgroundColor = wxColor
         config.previewView.bottomView.finishButtonDisableBackgroundColor = "#666666".color.withAlphaComponent(0.3)
         
+        config.previewView.bottomView.previewListTickColor = .white
+        config.previewView.bottomView.previewListTickBgColor = wxColor
         config.previewView.bottomView.selectedViewTickColor = wxColor
         config.previewView.disableFinishButtonWhenNotSelected = true
         
@@ -489,6 +491,8 @@ extension PhotoTools {
         config.previewView.bottomView.originalSelectBox.selectedBackgroundColor = redColor
         config.previewView.bottomView.finishButtonBackgroundColor = redColor
         config.previewView.bottomView.selectedViewTickColor = redColor
+        config.previewView.bottomView.previewListTickColor = .white
+        config.previewView.bottomView.previewListTickBgColor = redColor
         
         #if HXPICKER_ENABLE_EDITOR
         config.editor.video.cropTime.maximumTime = 0

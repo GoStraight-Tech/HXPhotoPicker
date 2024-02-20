@@ -101,8 +101,8 @@ class EditorVideoControlView: UIView {
         addSubview(bgView)
         
         playButton = UIButton(type: .custom)
-        playButton.setImage("hx_editor_video_control_play".image, for: .normal)
-        playButton.setImage("hx_editor_video_control_pause".image, for: .selected)
+        playButton.setImage(.imageResource.editor.video.play.image, for: .normal)
+        playButton.setImage(.imageResource.editor.video.pause.image, for: .selected)
         playButton.addTarget(self, action: #selector(didPlayButtonClick), for: .touchUpInside)
         playView = UIVisualEffectView(effect: UIBlurEffect(style: .dark))
         playView.contentView.addSubview(playButton)
@@ -206,6 +206,7 @@ class EditorVideoControlView: UIView {
     private var videoFrameCount: Int = 0
     
     private var videoFrameMap: [Int: CGImage] = [:]
+    private var videoFrameLock: DispatchQueue = .init(label: "com.hxpicker.editorvideoframelock")
     var videoSize: CGSize = .zero
     /// 一个item代表多少秒
     private var interval: CGFloat = -1
@@ -353,7 +354,9 @@ class EditorVideoControlView: UIView {
         imageGenerator?.generateCGImagesAsynchronously(forTimes: times) { (_, cgImage, _, result, _) in
             if result != .cancelled {
                 if let cgImage = cgImage {
-                    self.videoFrameMap[index] = cgImage
+                    self.videoFrameLock.sync {
+                        self.videoFrameMap[index] = cgImage
+                    }
                     if hasError {
                         for inde in errorIndex {
                             self.setCurrentCell(image: UIImage(cgImage: cgImage), index: inde)
@@ -363,7 +366,11 @@ class EditorVideoControlView: UIView {
                     }
                     self.setCurrentCell(image: UIImage(cgImage: cgImage), index: index)
                 }else {
-                    if let cgImage = self.videoFrameMap[index - 1] {
+                    var cg_image: CGImage?
+                    self.videoFrameLock.sync {
+                        cg_image = self.videoFrameMap[index - 1]
+                    }
+                    if let cgImage = cg_image {
                         self.setCurrentCell(image: UIImage(cgImage: cgImage), index: index)
                     }else {
                         errorIndex.append(index)
@@ -794,11 +801,14 @@ extension EditorVideoControlView: UICollectionViewDataSource,
         forItemAt indexPath: IndexPath
     ) {
         let myCell = cell as! EditorVideoControlViewCell
-        if let cgImage = videoFrameMap[indexPath.item] {
-            myCell.image = UIImage(cgImage: cgImage)
-        }else {
-            if let result = videoFrameMap.first {
-                myCell.image = UIImage(cgImage: result.value)
+        self.videoFrameLock.sync {
+            if videoFrameMap.keys.contains(indexPath.item),
+               let cgImage = videoFrameMap[indexPath.item] {
+                myCell.image = UIImage(cgImage: cgImage)
+            }else {
+                if let result = videoFrameMap.first {
+                    myCell.image = UIImage(cgImage: result.value)
+                }
             }
         }
     }

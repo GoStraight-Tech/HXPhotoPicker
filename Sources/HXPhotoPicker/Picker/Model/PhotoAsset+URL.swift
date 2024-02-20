@@ -15,6 +15,7 @@ public extension PhotoAsset {
     /// 获取image，视频为封面图片
     /// - Parameters:
     ///   - compressionQuality: 压缩参数 0-1
+    ///   - resolution: 缩小到指定分辨率，优先级小于`compressionQuality`
     ///   - completion: 获取完成
     func getImage(
         compressionQuality: CGFloat? = nil,
@@ -56,6 +57,40 @@ public extension PhotoAsset {
         #endif
         requestImage(compressionScale: compressionQuality) { image, _ in
             completion(image)
+        }
+    }
+    
+    /// 获取image，视频为封面图片
+    /// - Parameters:
+    ///   - targetSize: 指定`imageSize`
+    ///   - targetMode: 裁剪模式
+    ///   - completion: 获取完成
+    func getImage(
+        targetSize: CGSize,
+        targetMode: HX.ImageTargetMode = .fill,
+        completion: @escaping (UIImage?, PhotoAsset) -> Void
+    ) {
+        #if canImport(Kingfisher)
+        let hasEdited: Bool
+        #if HXPICKER_ENABLE_EDITOR
+        hasEdited = editedResult != nil
+        #else
+        hasEdited = false
+        #endif
+        if isNetworkAsset && !hasEdited {
+            getNetworkImage { image in
+                DispatchQueue.global().async {
+                    let image = image?.scaleToFillSize(size: targetSize, mode: targetMode)
+                    DispatchQueue.main.async {
+                        completion(image, self)
+                    }
+                }
+            }
+            return
+        }
+        #endif
+        requestImage(targetSize: targetSize, targetMode: targetMode) {
+            completion($0, $1)
         }
     }
     
@@ -395,6 +430,18 @@ extension PhotoAsset {
         try await .fetchObject(self, toFile: fileConfig, compression: compression)
     }
     
+    /// 获取 AssetResult
+    /// - Parameters:
+    ///   - compression: 压缩参数
+    ///   - fileConfig: 指定地址（如果为网络资源则忽略）
+    /// - Returns: 获取结果
+    public func assetResult(
+        _ compression: PhotoAsset.Compression? = nil,
+        toFile fileConfig: PhotoAsset.FileConfig? = nil
+    ) async throws -> AssetResult {
+        try await .fetchObject(self, toFile: fileConfig, compression: compression)
+    }
+    
     /// 获取 指定对象
     /// - Parameters:
     ///   - compression: 压缩参数
@@ -405,6 +452,26 @@ extension PhotoAsset {
         toFile fileConfig: PhotoAsset.FileConfig? = nil
     ) async throws -> T {
         try await T.fetchObject(self, toFile: fileConfig, compression: compression)
+    }
+    
+    /// 获取`UIImage`，视频为封面图片
+    /// - Parameters:
+    ///   - targetSize: 指定`imageSize`
+    ///   - targetMode: 裁剪模式
+    /// - Returns: 获取结果
+    public func image(
+        targetSize: CGSize,
+        targetMode: HX.ImageTargetMode = .fill
+    ) async throws -> UIImage {
+        try await withCheckedThrowingContinuation { continuation in
+            getImage(targetSize: targetSize, targetMode: targetMode) { image, _ in
+                if let image = image {
+                    continuation.resume(with: .success(image))
+                }else {
+                    continuation.resume(with: .failure(PickerError.imageFetchFaild))
+                }
+            }
+        }
     }
     
     fileprivate func image(_ compressionQuality: CGFloat?) async throws -> UIImage {

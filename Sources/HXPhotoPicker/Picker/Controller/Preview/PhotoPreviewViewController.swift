@@ -66,7 +66,7 @@ public class PhotoPreviewViewController: PhotoBaseViewController {
         if let photoToolbar = config.photoToolbar {
             isShowToolbar = photoToolbar.isShow(pickerConfig, type: previewType != .browser ? .preview : .browser)
         }else {
-            isShowToolbar = false
+            isShowToolbar = config.isShowBottomView
         }
         title = ""
         extendedLayoutIncludesOpaqueBars = true
@@ -79,9 +79,13 @@ public class PhotoPreviewViewController: PhotoBaseViewController {
         if isTransitioning {
             return
         }
-        view.backgroundColor = PhotoManager.isDark ?
-            config.backgroundDarkColor :
-            config.backgroundColor
+        if statusBarShouldBeHidden {
+            view.backgroundColor = config.statusBarHiddenBgColor
+        }else {
+            view.backgroundColor = PhotoManager.isDark ?
+                config.backgroundDarkColor :
+                config.backgroundColor
+        }
     }
     
     public override func viewDidLayoutSubviews() {
@@ -135,7 +139,12 @@ public class PhotoPreviewViewController: PhotoBaseViewController {
     public override func deviceOrientationDidChanged(notify: Notification) {
         photoToolbar.deviceOrientationDidChanged()
     }
-    
+    public override func viewWillAppear(_ animated: Bool) {
+        super.viewWillAppear(animated)
+        if isShowToolbar {
+            photoToolbar.viewWillAppear(self)
+        }
+    }
     public override func viewDidAppear(_ animated: Bool) {
         super.viewDidAppear(animated)
         viewDidAppear = true
@@ -143,7 +152,7 @@ public class PhotoPreviewViewController: PhotoBaseViewController {
             if let cell = self.getCell(for: self.currentPreviewIndex) {
                 cell.requestPreviewAsset()
             }else {
-                Timer.scheduledTimer(
+                self.requestPreviewTimer = Timer.scheduledTimer(
                     withTimeInterval: 0.2,
                     repeats: false
                 ) { [weak self] _ in
@@ -167,6 +176,30 @@ public class PhotoPreviewViewController: PhotoBaseViewController {
                 panGestureRecognizerFor: self,
                 type: .pop
             )
+        }
+        if isShowToolbar {
+            photoToolbar.viewDidAppear(self)
+        }
+    }
+    
+    public override func viewWillDisappear(_ animated: Bool) {
+        super.viewWillDisappear(animated)
+        if isShowToolbar {
+            photoToolbar.viewWillDisappear(self)
+        }
+    }
+    
+    public override func viewDidDisappear(_ animated: Bool) {
+        super.viewDidDisappear(animated)
+        guard let viewControllers = navigationController?.viewControllers else {
+            return
+        }
+        if !viewControllers.contains(self) {
+            requestPreviewTimer?.invalidate()
+            requestPreviewTimer = nil
+        }
+        if isShowToolbar {
+            photoToolbar.viewDidDisappear(self)
         }
     }
     
@@ -247,7 +280,7 @@ extension PhotoPreviewViewController {
         if pickerConfig.isMultipleSelect || previewType != .browser {
             if previewType != .browser {
                 if previewType == .picker {
-                    let imageName = pickerController.config.photoList.previewStyle == .present ? "hx_picker_photolist_back" : "hx_picker_photolist_cancel"
+                    let imageName: String = pickerController.config.photoList.previewStyle == .present ? .imageResource.picker.preview.back : .imageResource.picker.preview.cancel
                     let cancelItem = UIBarButtonItem(
                         image: imageName.image,
                         style: .done,
@@ -273,7 +306,7 @@ extension PhotoPreviewViewController {
                     )
                 }else {
                     cancelItem = UIBarButtonItem(
-                        title: "取消".localized,
+                        title: .textPreview.cancelTitle.text,
                         style: .done,
                         target: self,
                         action: #selector(didCancelItemClick)
@@ -315,7 +348,7 @@ extension PhotoPreviewViewController {
         }else if !pickerConfig.isMultipleSelect {
             if previewType == .picker {
                 let cancelItem = UIBarButtonItem(
-                    image: "hx_picker_photolist_cancel".image,
+                    image: .imageResource.picker.preview.cancel.image,
                     style: .done,
                     target: self,
                     action: #selector(didCancelItemClick)
@@ -450,6 +483,9 @@ extension PhotoPreviewViewController {
         if previewAssets.isEmpty {
             return
         }
+        if isShowToolbar {
+            photoToolbar.previewListInsert(photoAsset, at: item)
+        }
         previewAssets.insert(photoAsset, at: item)
         if item == currentPreviewIndex {
             getCell(for: item)?.cancelRequest()
@@ -513,8 +549,9 @@ extension PhotoPreviewViewController {
             photoAssets.append(photoAsset)
         }
         collectionView.deleteItems(at: indexPaths)
-        if config.isShowBottomView {
+        if isShowToolbar {
             photoToolbar.removeSelectedAssets(photoAssets)
+            photoToolbar.previewListRemove(photoAssets)
         }
         pickerController.pickerDelegate?.pickerController(
             pickerController,
@@ -537,11 +574,12 @@ extension PhotoPreviewViewController {
 //        collectionView.reloadItems(at: [IndexPath.init(item: index, section: 0)])
     }
     func addedCameraPhotoAsset(_ photoAsset: PhotoAsset) {
-        if config.isShowBottomView {
+        if isShowToolbar {
             photoToolbar.updateSelectedAssets(pickerController.selectedAssetArray)
             configBottomViewFrame()
             photoToolbar.layoutSubviews()
             photoToolbar.selectedAssetDidChanged(pickerController.selectedAssetArray)
+            photoToolbar.previewListInsert(photoAsset, at: currentPreviewIndex)
         }
         getCell(for: currentPreviewIndex)?.cancelRequest()
         previewAssets.insert(
@@ -592,7 +630,8 @@ extension PhotoPreviewViewController {
             }
         }
         collectionView.deleteItems(at: indexPaths)
-        if config.isShowBottomView {
+        if isShowToolbar {
+            photoToolbar.previewListRemove(assets)
             photoToolbar.removeSelectedAssets(assets)
             photoToolbar.requestOriginalAssetBtyes()
             photoToolbar.selectedAssetDidChanged(pickerController.selectedAssetArray)
@@ -606,6 +645,37 @@ extension PhotoPreviewViewController {
         if assetCount > 0 {
             scrollViewDidScroll(collectionView)
             startRequestPreviewTimer()
+        }else {
+            if let viewControllers = navigationController?.viewControllers,
+               viewControllers.count > 1 {
+                navigationController?.popViewController(animated: true)
+            }else {
+                dismiss(animated: true, completion: nil)
+            }
+        }
+    }
+    
+    func updateAsstes(for assets: [PhotoAsset]) {
+        previewAssets = assets
+        collectionView.reloadData()
+        let count = assetCount
+        if count > 0 {
+            var page = currentPreviewIndex
+            if page > count - 1 {
+                DispatchQueue.main.async {
+                    self.scrollToItem(count - 1)
+                }
+                page = count - 1
+            }else {
+                DispatchQueue.main.async {
+                    self.scrollViewDidScroll(self.collectionView)
+                    self.startRequestPreviewTimer()
+                }
+            }
+            if isShowToolbar {
+                photoToolbar.configPreviewList(assets, page: page)
+                configBottomViewFrame()
+            }
         }else {
             if let viewControllers = navigationController?.viewControllers,
                viewControllers.count > 1 {

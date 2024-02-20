@@ -45,6 +45,7 @@ open class CameraViewController: BaseViewController {
         delegate: CameraViewControllerDelegate? = nil
     ) {
         PhotoManager.shared.createLanguageBundle(languageType: config.languageType)
+        PhotoManager.shared.cameraType = config.cameraType
         self.config = config
         self.type = type
         self.delegate = delegate
@@ -54,6 +55,7 @@ open class CameraViewController: BaseViewController {
     private var didLayoutPreview = false
     
     var previewView: CameraPreviewView!
+    var normalPreviewView: CameraNormalPreviewView!
     var cameraManager: CameraManager!
     var bottomView: CameraBottomView!
     var topMaskLayer: CAGradientLayer!
@@ -82,9 +84,9 @@ open class CameraViewController: BaseViewController {
             view.addSubview(bottomView)
             PhotoTools.showConfirm(
                 viewController: self,
-                title: "相机不可用!".localized,
+                title: .textManager.camera.unavailableTitle.text,
                 message: nil,
-                actionTitle: "确定".localized
+                actionTitle: .textManager.camera.unavailableDoneTitle.text
             ) { [weak self] _ in
                 self?.backClick(true)
             }
@@ -124,16 +126,21 @@ open class CameraViewController: BaseViewController {
                 guard let self = self else { return }
                 self.delegate?.cameraViewController(self, flashModeDidChanged: $0)
             }
-            cameraManager.captureDidOutput = { [weak self] pixelBuffer in
-                guard let self = self else { return }
-                self.previewView.pixelBuffer = pixelBuffer
+            if config.cameraType == .metal {
+                cameraManager.captureDidOutput = { [weak self] pixelBuffer in
+                    guard let self = self else { return }
+                    self.previewView.pixelBuffer = pixelBuffer
+                }
+                previewView = CameraPreviewView(
+                    config: config,
+                    cameraManager: cameraManager
+                )
+                previewView.delegate = self
+            }else {
+                normalPreviewView = CameraNormalPreviewView(config: config)
+                normalPreviewView.delegate = self
             }
             
-            previewView = CameraPreviewView(
-                config: config,
-                cameraManager: cameraManager
-            )
-            previewView.delegate = self
             
             topMaskLayer = PhotoTools.getGradientShadowLayer(true)
             
@@ -161,14 +168,26 @@ open class CameraViewController: BaseViewController {
         }
     }
     open override func deviceOrientationWillChanged(notify: Notification) {
-        guard let previewView = previewView else { return }
-        didLayoutPreview = false
-        previewView.resetMask(nil)
+        if config.cameraType == .metal {
+            guard let previewView = previewView else { return }
+            didLayoutPreview = false
+            previewView.resetMask(nil)
+        }else {
+            guard let previewView = normalPreviewView else { return }
+            didLayoutPreview = false
+            previewView.resetMask(nil)
+        }
     }
     open override func deviceOrientationDidChanged(notify: Notification) {
-        guard let previewView = previewView else { return }
-        previewView.resetOrientation()
-        previewView.removeMask(true)
+        if config.cameraType == .metal {
+            guard let previewView = previewView else { return }
+            previewView.resetOrientation()
+            previewView.removeMask(true)
+        }else {
+            guard let previewView = normalPreviewView else { return }
+            previewView.resetOrientation()
+            previewView.removeMask(true)
+        }
     }
     
     open override func viewDidLayoutSubviews() {
@@ -194,43 +213,56 @@ open class CameraViewController: BaseViewController {
     open override func viewDidAppear(_ animated: Bool) {
         super.viewDidAppear(animated)
         if requestCameraSuccess {
-            if config.cameraType == .normal {
-                cameraManager.sessionQueue.async {
-                    if !self.sessionCommitConfiguration {
-                        self.cameraManager.session.commitConfiguration()
-                    }
-                    self.cameraManager.startRunning(applyQueue: false)
+            cameraManager.sessionQueue.async {
+                if !self.sessionCommitConfiguration {
+                    self.cameraManager.session.commitConfiguration()
                 }
+                self.cameraManager.startRunning(applyQueue: false)
             }
         }
     }
     open override func viewDidDisappear(_ animated: Bool) {
         super.viewDidDisappear(animated)
+        guard UIImagePickerController.isSourceTypeAvailable(.camera), let cameraManager else { return }
+        let isFront = cameraManager.activeCamera?.position == .front
         DispatchQueue.global().async {
             if let sampleBuffer = PhotoManager.shared.sampleBuffer,
                let pixelBuffer = CMSampleBufferGetImageBuffer(sampleBuffer),
                let imageData = PhotoTools.jpegData(withPixelBuffer: pixelBuffer, attachments: nil) {
-                PhotoManager.shared.cameraPreviewImage = UIImage(data: imageData)
+                var image = UIImage(data: imageData)
+                if self.config.cameraType == .normal {
+                    image = image?.rotation(to: .right)
+                }
+                if isFront {
+                    image = image?.rotation(to: .upMirrored)
+                }
+                PhotoManager.shared.cameraPreviewImage = image?.scaleImage(toScale: 0.5)
                 PhotoManager.shared.saveCameraPreview()
                 PhotoManager.shared.sampleBuffer = nil
             }
         }
-        if !UIImagePickerController.isSourceTypeAvailable(.camera) {
-            return
+        cameraManager.stopRunning()
+        if config.cameraType == .metal {
+            cameraManager.resetFilter()
         }
-        if config.cameraType == .normal {
-            cameraManager.stopRunning()
-        }
-        cameraManager.resetFilter()
     }
     
     func layoutSubviews() {
         let previewRect: CGRect
+        let ratioSize = config.aspectRatio.size
         if UIDevice.isPad || !UIDevice.isPortrait {
             if UIDevice.isPad {
                 previewRect = view.bounds
             }else {
-                let size = CGSize(width: view.height * 16 / 9, height: view.height)
+                let size: CGSize
+                switch ratioSize {
+                case .init(width: -1, height: -1):
+                    size = view.size
+                case .zero, .init(width: 9, height: 16):
+                    size = CGSize(width: view.height * 16 / 9, height: view.height)
+                default:
+                    size = CGSize(width: view.height * ratioSize.height / ratioSize.width, height: view.height)
+                }
                 previewRect = CGRect(
                     x: (view.width - size.width) * 0.5,
                     y: (view.height - size.height) * 0.5,
@@ -238,16 +270,28 @@ open class CameraViewController: BaseViewController {
                 )
             }
         }else {
-            let size = CGSize(width: view.width, height: view.width / 9 * 16)
+            let size: CGSize
+            switch ratioSize {
+            case .init(width: -1, height: -1):
+                size = view.size
+            case .zero, .init(width: 9, height: 16):
+                size = CGSize(width: view.width, height: view.width / 9 * 16)
+            default:
+                size = CGSize(width: view.width, height: view.width / ratioSize.width * ratioSize.height)
+            }
             previewRect = CGRect(
                 x: (view.width - size.width) * 0.5,
                 y: (view.height - size.height) * 0.5,
                 width: size.width, height: size.height
             )
         }
-        if config.cameraType == .normal, UIImagePickerController.isSourceTypeAvailable(.camera) {
+        if UIImagePickerController.isSourceTypeAvailable(.camera) {
             if !didLayoutPreview && AssetManager.cameraAuthorizationStatus() == .authorized {
-                previewView.frame = previewRect
+                if config.cameraType == .metal {
+                    previewView.frame = previewRect
+                }else {
+                    normalPreviewView.frame = previewRect
+                }
                 didLayoutPreview = true
             }
         }
@@ -256,7 +300,11 @@ open class CameraViewController: BaseViewController {
         let bottomY: CGFloat
         if UIDevice.isPortrait && !UIDevice.isPad {
             if UIDevice.isAllIPhoneX {
-                bottomY = view.height - 110 - previewRect.minY
+                if ratioSize.equalTo(.init(width: 9, height: 16)) {
+                    bottomY = view.height - 110 - previewRect.minY
+                }else {
+                    bottomY = view.height - bottomHeight - UIDevice.bottomMargin
+                }
             }else {
                 bottomY = view.height - bottomHeight
             }
@@ -309,48 +357,64 @@ extension CameraViewController {
     }
     @objc
     func didEnterBackground() {
-        previewView.clearMeatalPixelBuffer()
-        cameraManager.resetFilter()
+        if config.cameraType == .metal {
+            previewView.clearMeatalPixelBuffer()
+            cameraManager.resetFilter()
+        }
     }
     
     @objc
     public func didSwitchCameraClick() {
-        previewView.metalView.isPaused = true
-        previewView.pixelBuffer = nil
-        if config.cameraType == .normal {
-            do {
-                try cameraManager.switchCameras()
-            } catch {
-                HXLog("相机前后摄像头切换失败: \(error)")
-                switchCameraFailed()
-            }
-            delegate?.cameraViewController(
-                self,
-                didSwitchCameraCompletion: cameraManager.activeCamera?.position ?? .unspecified
-            )
-            if !cameraManager.setFlashMode(config.flashMode) {
-                cameraManager.setFlashMode(.off)
-            }
+        if config.cameraType == .metal {
+            previewView.metalView.isPaused = true
+            previewView.pixelBuffer = nil
+        }
+        do {
+            try cameraManager.switchCameras()
+        } catch {
+            HXLog("相机前后摄像头切换失败: \(error)")
+            switchCameraFailed()
+        }
+        delegate?.cameraViewController(
+            self,
+            didSwitchCameraCompletion: cameraManager.activeCamera?.position ?? .unspecified
+        )
+        if !cameraManager.setFlashMode(config.flashMode) {
+            cameraManager.setFlashMode(.off)
         }
         resetZoom()
-        previewView.resetOrientation()
-        cameraManager.resetFilter()
-        previewView.metalView.isPaused = false
+        if config.cameraType == .metal {
+            previewView.resetOrientation()
+            cameraManager.resetFilter()
+            previewView.metalView.isPaused = false
+        }else {
+            guard let connection = normalPreviewView.previewLayer?.connection else {
+                return
+            }
+            if cameraManager.activeCamera?.position == .front {
+                connection.isVideoMirrored = true
+            }else {
+                connection.isVideoMirrored = false
+            }
+            normalPreviewView.resetOrientation()
+        }
     }
     
     func switchCameraFailed() {
         ProgressHUD.showWarning(
             addedTo: view,
-            text: "摄像头切换失败!".localized,
+            text: .textManager.camera.switchCameraFailedTitle.text,
             animated: true,
             delayHide: 1.5
         )
     }
     
     func resetZoom() {
-        if config.cameraType == .normal {
-            cameraManager.zoomFacto = 1
+        cameraManager.zoomFacto = 1
+        if config.cameraType == .metal {
             previewView.effectiveScale = 1
+        }else {
+            normalPreviewView.effectiveScale = 1
         }
     }
     
@@ -358,8 +422,10 @@ extension CameraViewController {
         DeviceOrientationHelper
             .shared
             .startDeviceOrientationNotifier()
-        if config.cameraType == .normal {
+        if config.cameraType == .metal {
             view.addSubview(previewView)
+        }else {
+            view.addSubview(normalPreviewView)
         }
         view.addSubview(bottomView)
         cameraManager.sessionQueue.async {
@@ -385,59 +451,55 @@ extension CameraViewController {
                 }
             } catch {
                 self.cameraManager.session.commitConfiguration()
+                self.sessionCommitConfiguration = true
                 DispatchQueue.main.async {
                     PhotoTools.showConfirm(
                         viewController: self,
-                        title: "相机初始化失败!".localized,
+                        title: .textManager.camera.failedTitle.text,
                         message: nil,
-                        actionTitle: "确定".localized
+                        actionTitle: .textManager.camera.failedDoneTitle.text
                     ) { [weak self] _ in
                         self?.backClick(true)
                     }
                 }
             }
         }
-//        DispatchQueue.global().async {
-//        }
     }
     
     func addAudioInput() {
         AVCaptureDevice.requestAccess(for: .audio) { isGranted in
-            self.cameraManager.sessionQueue.async {
-//            DispatchQueue.global().async {
-                if isGranted {
-                    do {
-                        try self.cameraManager.addAudioInput()
-                        self.cameraManager.addAudioOutput()
-                    } catch {
-                        DispatchQueue.main.async {
-                            self.addAudioInputFailed()
-                        }
-                    }
-                }else {
+            if isGranted {
+                do {
+                    try self.cameraManager.addAudioInput()
+                    self.cameraManager.addAudioOutput()
+                } catch {
                     DispatchQueue.main.async {
-                        PhotoTools.showAlert(
-                            viewController: self,
-                            title: "无法使用麦克风".localized,
-                            message: "请在设置-隐私-相机中允许访问麦克风".localized,
-                            leftActionTitle: "取消".localized,
-                            rightActionTitle: "前往系统设置".localized
-                        ) { _ in
-                            self.addAudioInputFailed()
-                        } rightHandler: { _ in
-                            PhotoTools.openSettingsURL()
-                        }
+                        self.addAudioInputFailed()
                     }
                 }
-                self.addOutputCompletion()
+            }else {
+                DispatchQueue.main.async {
+                    PhotoTools.showAlert(
+                        viewController: self,
+                        title: .textManager.camera.notAuthorized.audioTitle.text,
+                        message: .textManager.camera.notAuthorized.audioMessage.text,
+                        leftActionTitle: .textManager.camera.notAuthorized.audioLeftTitle.text,
+                        rightActionTitle: .textManager.camera.notAuthorized.audioRightTitle.text
+                    ) { _ in
+                        self.addAudioInputFailed()
+                    } rightHandler: { _ in
+                        PhotoTools.openSettingsURL()
+                    }
+                }
             }
+            self.addOutputCompletion()
         }
     }
     
     func addAudioInputFailed() {
         ProgressHUD.showWarning(
             addedTo: self.view,
-            text: "麦克风添加失败，录制视频会没有声音哦!".localized,
+            text: .textManager.camera.audioInputFailedTitle.text,
             animated: true,
             delayHide: 1.5
         )
@@ -446,24 +508,27 @@ extension CameraViewController {
     func addOutputCompletion() {
         cameraManager.session.commitConfiguration()
         sessionCommitConfiguration = true
+        cameraManager.startRunning(applyQueue: false)
         if config.cameraType == .normal {
-            cameraManager.startRunning(applyQueue: false)
+            normalPreviewView.setSession(cameraManager.session)
         }
         requestCameraSuccess = true
         DispatchQueue.main.async {
-            self.previewView.resetOrientation()
+            if self.config.cameraType == .metal {
+                self.previewView.resetOrientation()
+            }
             self.sessionCompletion()
         }
     }
     
     func sessionCompletion() {
-        if config.cameraType == .normal {
-            if cameraManager.canSwitchCameras() {
-                addSwithCameraButton()
-            }
+        if cameraManager.canSwitchCameras() {
+            addSwithCameraButton()
+        }
+        if config.cameraType == .metal {
             previewView.setupGestureRecognizer()
         }else {
-            addSwithCameraButton()
+            normalPreviewView.setupGestureRecognizer()
         }
         bottomView.addGesture(for: type)
         #if HXPICKER_ENABLE_CAMERA_LOCATION
@@ -474,7 +539,7 @@ extension CameraViewController {
     func addSwithCameraButton() {
         view.layer.addSublayer(topMaskLayer)
         navigationItem.rightBarButtonItem = UIBarButtonItem(
-            image: "hx_camera_overturn".image,
+            image: .imageResource.camera.switchCamera.image,
             style: .plain,
             target: self,
             action: #selector(didSwitchCameraClick)

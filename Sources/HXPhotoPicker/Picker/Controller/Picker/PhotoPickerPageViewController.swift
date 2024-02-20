@@ -52,7 +52,7 @@ public class PhotoPickerPageViewController: BaseViewController, PhotoPickerList 
             var titles: [String] = []
             contentVCs = []
             if !assetResult.videoAssets.isEmpty {
-                titles.append("视频".localized)
+                titles.append(.textPhotoList.pageVideoTitle.text)
                 let assets = assetResult.videoAssets
                 let vc = PhotoPickerListViewController.init(config: pickerConfig)
                 vc.delegate = self
@@ -60,7 +60,7 @@ public class PhotoPickerPageViewController: BaseViewController, PhotoPickerList 
                 contentVCs.append(vc)
             }
             if !assetResult.normalAssets.isEmpty {
-                titles.append("照片".localized)
+                titles.append(.textPhotoList.pagePhotoTitle.text)
                 let assets = assetResult.normalAssets
                 let vc = PhotoPickerListViewController.init(config: pickerConfig)
                 vc.delegate = self
@@ -68,7 +68,7 @@ public class PhotoPickerPageViewController: BaseViewController, PhotoPickerList 
                 contentVCs.append(vc)
             }
             if !assetResult.gifAssets.isEmpty {
-                titles.append("GIF")
+                titles.append(.textPhotoList.pageGifTitle.text)
                 let assets = assetResult.gifAssets
                 let vc = PhotoPickerListViewController.init(config: pickerConfig)
                 vc.delegate = self
@@ -76,7 +76,7 @@ public class PhotoPickerPageViewController: BaseViewController, PhotoPickerList 
                 contentVCs.append(vc)
             }
             if !assetResult.livePhotoAssets.isEmpty {
-                titles.append("LivePhoto")
+                titles.append(.textPhotoList.pageLivePhotoTitle.text)
                 let assets = assetResult.livePhotoAssets
                 let vc = PhotoPickerListViewController.init(config: pickerConfig)
                 vc.delegate = self
@@ -84,13 +84,14 @@ public class PhotoPickerPageViewController: BaseViewController, PhotoPickerList 
                 contentVCs.append(vc)
             }
             if !titles.isEmpty {
-                titles.insert("全部".localized, at: 0)
+                titles.insert(.textPhotoList.pageAllTitle.text, at: 0)
                 let vc = PhotoPickerListViewController.init(config: pickerConfig)
                 vc.delegate = self
                 vc.assetResult = assetResult
                 contentVCs.insert(vc, at: 0)
             }
             headerView.titles = titles
+            headerView.selectedIndex = 0
             
             scrollView.subviews.forEach { $0.removeFromSuperview() }
             children.forEach { $0.removeFromParent() }
@@ -99,6 +100,7 @@ public class PhotoPickerPageViewController: BaseViewController, PhotoPickerList 
                 scrollView.addSubview($0.view)
             }
             layoutViews()
+            scrollView.contentOffset = .zero
         }
     }
     
@@ -217,11 +219,6 @@ public class PhotoPickerPageViewController: BaseViewController, PhotoPickerList 
         super.viewDidLayoutSubviews()
         headerView.frame = .init(x: 0, y: contentInset.top, width: view.width, height: 40)
         scrollView.frame = view.bounds
-        if #available(iOS 11.0, *) {
-            scrollView.contentInsetAdjustmentBehavior = .never
-        }else {
-            automaticallyAdjustsScrollViewInsets = false
-        }
         layoutViews()
         if isDeviceOrientation {
             headerView(headerView, didSelectedButton: headerView.selectedIndex)
@@ -294,6 +291,7 @@ extension PhotoPickerPageViewController: PhotoPickerListDelegate {
                 $0.selectCell(for: asset, isSelected: true)
             }
         }
+        delegate?.photoList(self, didSelectedAsset: asset)
     }
     
     public func photoList(_ photoList: PhotoPickerList, didDeselectedAsset asset: PhotoAsset) {
@@ -302,8 +300,12 @@ extension PhotoPickerPageViewController: PhotoPickerListDelegate {
                 $0.selectCell(for: asset, isSelected: false)
             }
         }
+        delegate?.photoList(self, didDeselectedAsset: asset)
     }
     
+    public func photoList(_ photoList: PhotoPickerList, updateAsset asset: PhotoAsset) {
+        delegate?.photoList(self, updateAsset: asset)
+    }
 }
 
 protocol PhotoPickerPageHeaderViewDelegate: AnyObject {

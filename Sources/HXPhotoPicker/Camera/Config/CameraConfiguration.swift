@@ -12,6 +12,16 @@ import AVFoundation
 #if !targetEnvironment(macCatalyst)
 public struct CameraConfiguration: IndicatorTypeConfig {
     
+    /// 图片资源
+    public var imageResource: HX.ImageResource.Camera {
+        HX.ImageResource.shared.camera
+    }
+    
+    /// 文本管理
+    public var textManager: HX.TextManager.Camera {
+        HX.TextManager.shared.camera
+    }
+    
     public var modalPresentationStyle: UIModalPresentationStyle
     
     /// If the built-in language is not enough, you can add a custom language text
@@ -61,6 +71,10 @@ public struct CameraConfiguration: IndicatorTypeConfig {
     /// 相机分辨率
     public var sessionPreset: Preset = .hd1280x720
     
+    /// 相机画面比例
+    /// iPad无效
+    public var aspectRatio: AspectRatio = ._9x16
+    
     /// 摄像头默认位置
     public var position: DevicePosition = .back
     
@@ -94,18 +108,22 @@ public struct CameraConfiguration: IndicatorTypeConfig {
     /// 摄像头最大缩放比例
     public var videoMaxZoomScale: CGFloat = 6
     
+    /// cameraType == .metal 时才有效
     /// 默认滤镜对应滤镜数组的下标，为 -1 默认不加滤镜
     public var defaultFilterIndex: Int = -1
     
+    /// cameraType == .metal 时才有效
     /// 切换滤镜显示名称
     public var changeFilterShowName: Bool = true
     
+    /// cameraType == .metal 时才有效
     /// 拍照时的滤镜数组，请与 videoFilters 效果保持一致
     /// 左滑/右滑切换滤镜
     public var photoFilters: [CameraFilter] = [
         InstantFilter(), Apply1977Filter(), ToasterFilter(), TransferFilter()
     ]
     
+    /// cameraType == .metal 时才有效
     /// 录制视频的滤镜数组，请与 photoFilters 效果保持一致
     /// 左滑/右滑切换滤镜
     public var videoFilters: [CameraFilter] = [
@@ -147,6 +165,32 @@ extension CameraConfiguration {
         case back
         /// 前置
         case front
+    }
+    
+    public enum AspectRatio {
+        case fullScreen
+        case _9x16
+        case _16x9
+        case _3x4
+        case _1x1
+        case custom(CGSize)
+        
+        var size: CGSize {
+            switch self {
+            case .fullScreen:
+                return .init(width: -1, height: -1)
+            case ._9x16:
+                return .init(width: 9, height: 16)
+            case ._16x9:
+                return .init(width: 16, height: 9)
+            case ._3x4:
+                return .init(width: 3, height: 4)
+            case ._1x1:
+                return .init(width: 1, height: 1)
+            case .custom(let size):
+                return size
+            }
+        }
     }
     
     public enum TakePhotoMode {

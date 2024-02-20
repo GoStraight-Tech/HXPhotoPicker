@@ -8,14 +8,23 @@
 import UIKit
 
 extension UIApplication {
-    class var _keyWindow: UIWindow? {
-        if #available(iOS 13.0, *) {
-            return shared.windows.filter({ $0.isKeyWindow }).last
+    static var _keyWindow: UIWindow? {
+        if #available(iOS 13.0, *), Thread.isMainThread,
+           let window = shared.windows.filter({ $0.isKeyWindow }).last {
+            return window
         }
         guard let window = shared.delegate?.window else {
             return shared.keyWindow
         }
         return window
+    }
+    
+    static var interfaceOrientation: UIInterfaceOrientation {
+        if #available(iOS 13.0, *), Thread.isMainThread,
+           let orientation = _keyWindow?.windowScene?.interfaceOrientation {
+            return orientation
+        }
+        return shared.statusBarOrientation
     }
 }
 

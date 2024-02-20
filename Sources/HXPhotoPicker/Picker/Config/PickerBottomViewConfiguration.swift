@@ -161,6 +161,14 @@ public struct PickerBottomViewConfiguration {
     /// 暗黑风格下提示语箭头颜色
     public var promptArrowDarkColor: UIColor = .systemBlue
     
+    /// 显示预览列表，优先级高于`isShowSelectedView`
+    public var isShowPreviewList: Bool = true
+    
+    public var previewListTickColor: UIColor = .white
+    public var previewListTickBgColor: UIColor = .systemBlue
+    public var previewListTickDarkColor: UIColor = .white
+    public var previewListTickBgDarkColor: UIColor = .systemBlue
+    
     /// Show selected resources
     /// 显示已选资源
     public var isShowSelectedView: Bool = true
@@ -171,7 +179,7 @@ public struct PickerBottomViewConfiguration {
     
     /// The selected tick color of the selected resource
     /// 已选资源选中的勾勾颜色
-    public var selectedViewTickColor: UIColor = .white
+    public var selectedViewTickColor: UIColor = .systemBlue
     public var selectedViewTickDarkColor: UIColor = .systemBlue
     
     public init() {
@@ -193,5 +201,28 @@ public struct PickerBottomViewConfiguration {
         // 原图按钮选中时的勾勾宽度
         boxConfig.tickWidth = 1
         self.originalSelectBox = boxConfig
+    }
+    
+    public mutating func setThemeColor(_ color: UIColor) {
+        originalSelectBox.setThemeColor(color)
+        originalSelectBox.borderColor = color
+        previewButtonTitleColor = color
+        originalButtonTitleColor = color
+        finishButtonBackgroundColor = color
+        finishButtonDarkBackgroundColor = color
+        finishButtonDisableBackgroundColor = color.withAlphaComponent(0.4)
+        finishButtonDisableDarkBackgroundColor = color.withAlphaComponent(0.4)
+        #if HXPICKER_ENABLE_EDITOR
+        editButtonTitleColor = color
+        #endif
+        promptIconColor = color
+        promptIconDarkColor = color
+        promptTitleColor = color
+        promptArrowColor = color
+        promptArrowDarkColor = color
+        previewListTickBgColor = color
+        previewListTickBgDarkColor = color
+        selectedViewTickColor = color
+        selectedViewTickDarkColor = color
     }
 }

@@ -49,7 +49,6 @@ extension EditorViewController {
                 }else {
                     editorView.isStickerEnabled = true
                 }
-                showChangeButton()
                 checkFinishButtonState()
                 return
             case .graffiti:
@@ -59,7 +58,6 @@ extension EditorViewController {
                     hideCanvasViews()
                     editorView.cancelCanvasDrawing()
                     editorView.isStickerEnabled = true
-                    showChangeButton()
                     checkFinishButtonState()
                     toolsView.deselected()
                     showToolsView()
@@ -106,7 +104,6 @@ extension EditorViewController {
                 }else {
                     editorView.isStickerEnabled = true
                 }
-                showChangeButton()
                 checkFinishButtonState()
                 return
             case .graffiti:
@@ -116,7 +113,6 @@ extension EditorViewController {
                     hideCanvasViews()
                     editorView.finishCanvasDrawing()
                     editorView.isStickerEnabled = true
-                    showChangeButton()
                     checkFinishButtonState()
                     toolsView.deselected()
                     showToolsView()
@@ -140,7 +136,13 @@ extension EditorViewController {
         rotateScaleView.reset()
         if !config.cropSize.aspectRatios.isEmpty {
             scaleSwitchSelectType = nil
-            ratioToolView.scrollToFree(animated: true)
+            if config.cropSize.isFixedRatio,
+               !config.cropSize.isResetToOriginal,
+               config.cropSize.isRoundCrop {
+                ratioToolView.deselected()
+            }else {
+                ratioToolView.scrollToFree(animated: true)
+            }
             hideScaleSwitchView(true)
         }
         button.isEnabled = false
@@ -164,11 +166,6 @@ extension EditorViewController {
     @objc
     func didMirrorVerticallyButtonClick(button: UIButton) {
         editorView.mirrorVertically(true)
-    }
-    
-    @objc
-    func didChangeButtonClick(button: UIButton) {
-        
     }
     
     @objc

@@ -75,7 +75,7 @@ class EditorMusicListViewController: BaseViewController {
         super.viewDidLoad()
         initViews()
         view.backgroundColor = .clear
-        title = "背景音乐".localized
+        title = .textManager.editor.music.listTitle.text
         if !config.infos.isEmpty {
             musics = getMusics(infos: config.infos)
             hasMore = true
@@ -116,8 +116,8 @@ class EditorMusicListViewController: BaseViewController {
         loadBgView.addSubview(loadingView)
         
         finishButton = UIButton(type: .system)
-        let title = "完成".localized
-        let font = UIFont.systemFont(ofSize: 17)
+        let title: String = .textManager.editor.music.finishTitle.text
+        let font: UIFont = .textManager.editor.music.finishTitleFont
         finishButton.setTitle(title, for: .normal)
         finishButton.setTitleColor(config.finishButtonTitleColor, for: .normal)
         if config.finishButtonBackgroundColor != .clear {
@@ -139,11 +139,9 @@ class EditorMusicListViewController: BaseViewController {
         searchView.textColor = .white
         searchView.tintColor = config.tintColor
         searchView.attributedPlaceholder = NSAttributedString(
-            string: config.placeholder.isEmpty ?
-                "搜索歌名".localized :
-                config.placeholder,
+            string: config.placeholder,
             attributes: [
-                .font: UIFont.systemFont(ofSize: 17),
+                .font: UIFont.textManager.editor.music.searchPlaceholderFont,
                 .foregroundColor: UIColor.white.withAlphaComponent(0.4)
             ]
         )
@@ -151,7 +149,7 @@ class EditorMusicListViewController: BaseViewController {
         searchView.clearButtonMode = .whileEditing
         searchView.returnKeyType = .search
         let searchIcon = UIImageView()
-        searchIcon.image = "hx_editor_video_music_search".image?.withRenderingMode(.alwaysTemplate)
+        searchIcon.image = .imageResource.editor.music.search.image?.withRenderingMode(.alwaysTemplate)
         searchIcon.tintColor = .white.withAlphaComponent(0.4)
         searchIcon.size = searchIcon.image?.size ?? .zero
         searchView.leftView = searchIcon

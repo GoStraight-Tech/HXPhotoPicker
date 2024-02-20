@@ -71,6 +71,13 @@ extension PhotoPickerViewController: PhotoPreviewViewControllerDelegate {
             if !isSelected && updateCell {
                 listView.updateCell(for: photoAsset)
             }
+            if isShowToolbar {
+                if isSelected {
+                    photoToolbar.insertSelectedAsset(photoAsset)
+                }else {
+                    photoToolbar.removeSelectedAssets([photoAsset])
+                }
+            }
         }
         listView.updateCellSelectedTitle()
         photoToolbar.selectedAssetDidChanged(pickerController.selectedAssetArray)
@@ -98,12 +105,18 @@ extension PhotoPickerViewController: PhotoPreviewViewControllerDelegate {
     
     func previewViewController(movePhotoAsset previewController: PhotoPreviewViewController) {
         listView.updateCellSelectedTitle()
+        if isShowToolbar {
+            photoToolbar.updateSelectedAssets(pickerController.selectedAssetArray)
+        }
     }
     
     func previewViewController(_ previewController: PhotoPreviewViewController, moveItem fromIndex: Int, toIndex: Int) {
         if config.previewStyle == .present {
             pickerController.pickerData.move(fromIndex: fromIndex, toIndex: toIndex)
             listView.updateCellSelectedTitle()
+            if isShowToolbar {
+                photoToolbar.updateSelectedAssets(pickerController.selectedAssetArray)
+            }
         }
     }
     
@@ -134,6 +147,9 @@ extension PhotoPickerViewController: PhotoPreviewViewControllerDelegate {
         requestSelectedAssetFileSize()
         if listView.filterOptions.contains(.edited) {
             listView.reloadData()
+        }
+        if isShowToolbar {
+            photoToolbar.reloadSelectedAsset(photoAsset)
         }
     }
     
@@ -205,6 +221,9 @@ extension PhotoPickerViewController: PhotoPickerControllerDelegate {
         _ pickerController: PhotoPickerController,
         dismissPreviewViewForIndexAt index: Int
     ) -> UIView? {
+        if pickerController.previewAssets.isEmpty {
+            return nil
+        }
         let photoAsset = pickerController.previewAssets[index]
         if let cell = listView.getCell(for: photoAsset) {
             listView.scrollCellToVisibleArea(cell)

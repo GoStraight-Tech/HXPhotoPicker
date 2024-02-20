@@ -20,6 +20,53 @@ public extension PhotoAsset {
         let info: [AnyHashable: Any]?
     }
     
+    @discardableResult
+    func requestImage(
+        filterEditor: Bool = false,
+        iCloudHandler: PhotoAssetICloudHandler? = nil,
+        progressHandler: PhotoAssetProgressHandler? = nil,
+        resultHandler: @escaping (PhotoAsset, UIImage?, [AnyHashable: Any]?) -> Void
+    ) -> PHImageRequestID? {
+        #if HXPICKER_ENABLE_EDITOR
+        if !filterEditor, editedResult != nil {
+            DispatchQueue.global().async {
+                let image = self.getEditedImage()
+                DispatchQueue.main.async {
+                    resultHandler(self, image, nil)
+                }
+            }
+            return nil
+        }
+        #endif
+        guard let phAsset else {
+            return nil
+        }
+        if downloadStatus != .succeed {
+            downloadStatus = .downloading
+        }
+        return AssetManager.requestImage(for: phAsset, targetSize: phAsset.targetSize, resizeMode: .fast) {
+            iCloudHandler?(self, $0)
+        } progressHandler: { progress, error, stop, info in
+            self.downloadProgress = progress
+            DispatchQueue.main.async {
+                progressHandler?(self, progress)
+            }
+        } resultHandler: {
+            if $0 != nil {
+                self.downloadProgress = 1
+                self.downloadStatus = .succeed
+            }else {
+                if AssetManager.assetCancelDownload(for: $1) {
+                    self.downloadStatus = .canceled
+                }else {
+                    self.downloadProgress = 0
+                    self.downloadStatus = .failed
+                }
+            }
+            resultHandler(self, $0, $1)
+        }
+    }
+    
     /// 获取原始图片地址
     /// 网络图片获取方法 getNetworkImageURL
     /// - Parameters:
@@ -95,7 +142,7 @@ public extension PhotoAsset {
         ) { (result) in
             switch result {
             case .success(let dataResult):
-                if let compressionScale = compressionScale {
+                if let compressionScale = compressionScale, compressionScale < 1 {
                     DispatchQueue.global().async {
                         if let data = PhotoTools.imageCompress(
                             dataResult.imageData,
@@ -115,11 +162,60 @@ public extension PhotoAsset {
                 }
                 let image = UIImage(
                     data: dataResult.imageData
-                )?
-                .normalizedImage()
+                )?.normalizedImage()
                 completion?(image, self)
             case .failure:
                 completion?(nil, self)
+            }
+        }
+    }
+    
+    @discardableResult
+    func requestImage(
+        targetSize: CGSize,
+        targetMode: HX.ImageTargetMode = .fill,
+        completion: ((UIImage?, PhotoAsset) -> Void)?
+    ) -> PHImageRequestID? {
+        #if HXPICKER_ENABLE_EDITOR
+        if editedResult != nil {
+            DispatchQueue.global().async {
+                let image = self.getEditedImage()?.scaleToFillSize(size: targetSize, mode: targetMode)
+                DispatchQueue.main.async {
+                    completion?(image, self)
+                }
+            }
+            return nil
+        }
+        #endif
+        guard let phAsset = phAsset else {
+            requestLocalImage(
+                urlType: .original
+            ) { (image, photoAsset) in
+                DispatchQueue.global().async {
+                    let image = image?.scaleToFillSize(size: targetSize, mode: targetMode)
+                    DispatchQueue.main.async {
+                        completion?(image, photoAsset)
+                    }
+                }
+            }
+            return nil
+        }
+        
+        return AssetManager.requestImage(
+            for: phAsset,
+            targetSize: targetSize,
+            deliveryMode: .highQualityFormat,
+            resizeMode: .fast
+        ) { image, info in
+            if targetMode == .fill {
+                completion?(image, self)
+            }else {
+                DispatchQueue.global().async {
+                    let image = image?.scaleToFillSize(size: targetSize, mode: targetMode)
+                    DispatchQueue.main.async {
+                        completion?(image, self)
+                    }
+                }
             }
         }
     }
@@ -567,7 +663,7 @@ public extension PhotoAsset {
             self.videoURL = videoURL
         }
         
-        func cancelRequest() {
+        public func cancelRequest() {
             isCancel = true
             #if canImport(Kingfisher)
             if let task = imageTask {
@@ -589,11 +685,11 @@ public extension PhotoAsset {
     @discardableResult
     func requestLocalLivePhoto(
         URLHandler: ((URL?, URL?) -> Void)? = nil,
-        success: ((PhotoAsset, PHLivePhoto) -> Void)? = nil,
-        failure: PhotoAssetFailureHandler? = nil
+        success: @escaping (PhotoAsset, PHLivePhoto) -> Void,
+        failure: @escaping PhotoAssetFailureHandler
     ) -> LocalLivePhotoRequest? {
         guard let livePhoto = localLivePhoto else {
-            failure?(self, nil, .localLivePhotoIsEmpty)
+            failure(self, nil, .localLivePhotoIsEmpty)
             return nil
         }
         let imageURL = livePhoto.imageURL
@@ -643,7 +739,7 @@ public extension PhotoAsset {
                     )
                 case .failure:
                     URLHandler?(nil, nil)
-                    failure?(self, nil, .imageDownloadFailed)
+                    failure(self, nil, .imageDownloadFailed)
                 }
             }
             #else
@@ -656,7 +752,7 @@ public extension PhotoAsset {
             PhotoManager.shared.downloadTask(with: videoURL) { url, _, _ in
                 guard let video_URL = url else {
                     URLHandler?(nil, nil)
-                    failure?(self, nil, .videoDownloadFailed)
+                    failure(self, nil, .videoDownloadFailed)
                     return
                 }
                 self.writeLivePhoto(
@@ -680,7 +776,7 @@ public extension PhotoAsset {
                     PhotoManager.shared.downloadTask(with: videoURL) { url, _, _ in
                         guard let video_URL = url else {
                             URLHandler?(nil, nil)
-                            failure?(self, nil, .videoDownloadFailed)
+                            failure(self, nil, .videoDownloadFailed)
                             return
                         }
                         self.writeLivePhoto(
@@ -696,7 +792,7 @@ public extension PhotoAsset {
                     }
                 case .failure:
                     URLHandler?(nil, nil)
-                    failure?(self, nil, .imageDownloadFailed)
+                    failure(self, nil, .imageDownloadFailed)
                 }
             }
             #else
@@ -712,12 +808,9 @@ public extension PhotoAsset {
     private func mergeToLivePhoto(
         imageURL: URL,
         videoURL: URL,
-        success: ((PhotoAsset, PHLivePhoto) -> Void)? = nil,
-        failure: PhotoAssetFailureHandler? = nil
+        success: @escaping (PhotoAsset, PHLivePhoto) -> Void,
+        failure: @escaping PhotoAssetFailureHandler
     ) -> PHLivePhotoRequestID? {
-        if success == nil && failure == nil {
-            return nil
-        }
         let image = UIImage(contentsOfFile: imageURL.path)
         return PHLivePhoto.request(
             withResourceFileURLs: [videoURL, imageURL],
@@ -727,7 +820,7 @@ public extension PhotoAsset {
         ) { phLivePhoto, info in
             guard let phLivePhoto = phLivePhoto else {
                 DispatchQueue.main.async {
-                    failure?(self, nil, .localLivePhotoWriteVideoFailed)
+                    failure(self, nil, .localLivePhotoWriteVideoFailed)
                 }
                 return
             }
@@ -736,13 +829,13 @@ public extension PhotoAsset {
             DispatchQueue.main.async {
                 if let isDegraded = isDegraded {
                     if isDegraded == 0 {
-                        success?(self, phLivePhoto)
+                        success(self, phLivePhoto)
                     }
                 }else if let isCancel = isCancel {
                     if isCancel == 0 {
-                        success?(self, phLivePhoto)
+                        success(self, phLivePhoto)
                     }else {
-                        failure?(self, info, .localLivePhotoRequestFailed)
+                        failure(self, info, .localLivePhotoRequestFailed)
                     }
                 }
             }
@@ -756,8 +849,8 @@ public extension PhotoAsset {
         videoURL: URL,
         videoCacheKey: String?,
         URLHandler: ((URL?, URL?) -> Void)? = nil,
-        success: ((PhotoAsset, PHLivePhoto) -> Void)? = nil,
-        failure: PhotoAssetFailureHandler? = nil
+        success: @escaping (PhotoAsset, PHLivePhoto) -> Void,
+        failure: @escaping PhotoAssetFailureHandler
     ) {
         DispatchQueue.global().async {
             PhotoTools.getLivePhotoJPGURL(
@@ -767,14 +860,14 @@ public extension PhotoAsset {
                 guard let imageURL = url else {
                     DispatchQueue.main.async {
                         URLHandler?(nil, nil)
-                        failure?(self, nil, .localLivePhotoWriteImageFailed)
+                        failure(self, nil, .localLivePhotoWriteImageFailed)
                     }
                     return
                 }
                 if request.isCancel {
                     DispatchQueue.main.async {
                         URLHandler?(imageURL, nil)
-                        failure?(self, nil, .localLivePhotoCancelWrite)
+                        failure(self, nil, .localLivePhotoCancelWrite)
                     }
                     return
                 }
@@ -791,7 +884,7 @@ public extension PhotoAsset {
                     guard let videoURL = url else {
                         DispatchQueue.main.async {
                             URLHandler?(imageURL, nil)
-                            failure?(self, nil, .localLivePhotoWriteVideoFailed)
+                            failure(self, nil, .localLivePhotoWriteVideoFailed)
                         }
                         return
                     }
@@ -972,6 +1065,220 @@ public extension PhotoAsset {
                 }
                 failure?(self, error.info, error.error)
             }
+        }
+    }
+    
+    @discardableResult
+    func requestPlayerItem(
+        filterEditor: Bool = false,
+        deliveryMode: PHVideoRequestOptionsDeliveryMode = .automatic,
+        iCloudHandler: PhotoAssetICloudHandler?,
+        progressHandler: PhotoAssetProgressHandler?,
+        success: ((PhotoAsset, AVPlayerItem) -> Void)?,
+        failure: PhotoAssetFailureHandler?
+    ) -> PHImageRequestID {
+        #if HXPICKER_ENABLE_EDITOR
+        if let videoEdit = videoEditedResult, !filterEditor {
+            success?(self, .init(url: videoEdit.url))
+            return 0
+        }
+        #endif
+        guard let phAsset = phAsset else {
+            if let localVideoURL = localVideoAsset?.videoURL {
+                success?(self, .init(url: localVideoURL))
+            }else if let networkVideoURL = networkVideoAsset?.videoURL {
+                success?(self, .init(url: networkVideoURL))
+            }else {
+                failure?(self, nil, .invalidPHAsset)
+            }
+            return 0
+        }
+        if downloadStatus != .succeed {
+            downloadStatus = .downloading
+        }
+        return AssetManager.requestPlayerItem(
+            for: phAsset,
+            deliveryMode: deliveryMode
+        ) { (iCloudRequestID) in
+            iCloudHandler?(self, iCloudRequestID)
+        } progressHandler: { (progress, _, _, _) in
+            self.downloadProgress = progress
+            DispatchQueue.main.async {
+                progressHandler?(self, progress)
+            }
+        } resultHandler: { (result) in
+            switch result {
+            case .success(let playerItem):
+                self.downloadProgress = 1
+                self.downloadStatus = .succeed
+                success?(self, playerItem)
+            case .failure(let error):
+                if AssetManager.assetCancelDownload(for: error.info) {
+                    self.downloadStatus = .canceled
+                }else {
+                    self.downloadProgress = 0
+                    self.downloadStatus = .failed
+                }
+                failure?(self, error.info, error.error)
+            }
+        }
+    }
+}
+
+
+@available(iOS 13.0, *)
+public extension PhotoAsset {
+    
+    func requesthumbnailImage(
+        targetWidth: CGFloat = 180,
+        didRequestHandler: ((PhotoAsset, PHImageRequestID) -> Void)? = nil
+    ) async throws -> UIImage {
+        try await withCheckedThrowingContinuation { continuation in
+            var didResume: Bool = false
+            let requestId = requestThumbnailImage(targetWidth: targetWidth) { image, _, info in
+                if didResume { return }
+                if let isError = info?.isError, isError {
+                    continuation.resume(throwing: AssetError.requestFailed(info))
+                    didResume = true
+                    return
+                }
+                if !AssetManager.assetIsDegraded(for: info) {
+                    if let image {
+                        continuation.resume(returning: image)
+                    }else {
+                        continuation.resume(throwing: AssetError.requestFailed(info))
+                    }
+                    didResume = true
+                }
+            }
+            if let requestId {
+                didRequestHandler?(self, requestId)
+            }
+        }
+    }
+    
+    func requestPreviewImage(
+        didRequestHandler: ((PhotoAsset, PHImageRequestID) -> Void)? = nil,
+        iCloudHandler: PhotoAssetICloudHandler? = nil,
+        progressHandler: PhotoAssetProgressHandler? = nil
+    ) async throws -> UIImage {
+        try await withCheckedThrowingContinuation { continuation in
+            var didResume: Bool = false
+            let requestId = requestImage(iCloudHandler: iCloudHandler, progressHandler: progressHandler) { _, image, info in
+                if didResume { return }
+                if let isError = info?.isError, isError {
+                    continuation.resume(throwing: AssetError.requestFailed(info))
+                    didResume = true
+                    return
+                }
+                if !AssetManager.assetIsDegraded(for: info) {
+                    if let image {
+                        continuation.resume(returning: image)
+                    }else {
+                        continuation.resume(throwing: AssetError.requestFailed(info))
+                    }
+                    didResume = true
+                }
+            }
+            if let requestId {
+                didRequestHandler?(self, requestId)
+            }
+        }
+    }
+    
+    func requestAVAsset(
+        didRequestHandler: ((PhotoAsset, PHImageRequestID) -> Void)? = nil,
+        iCloudHandler: PhotoAssetICloudHandler? = nil,
+        progressHandler: PhotoAssetProgressHandler? = nil
+    ) async throws -> AVAsset {
+        try await withCheckedThrowingContinuation { continuation in
+            let requestId = requestAVAsset(iCloudHandler: iCloudHandler, progressHandler: progressHandler) { _, avAsset, _ in
+                continuation.resume(returning: avAsset)
+            } failure: { _, _, error in
+                continuation.resume(throwing: error)
+            }
+            didRequestHandler?(self, requestId)
+        }
+    }
+    
+    func requestPlayerItem(
+        didRequestHandler: ((PhotoAsset, PHImageRequestID) -> Void)? = nil,
+        iCloudHandler: PhotoAssetICloudHandler? = nil,
+        progressHandler: PhotoAssetProgressHandler? = nil
+    ) async throws -> AVPlayerItem {
+        try await withCheckedThrowingContinuation { continuation in
+            let requestId = requestPlayerItem(iCloudHandler: iCloudHandler, progressHandler: progressHandler) { _, playerItem in
+                continuation.resume(returning: playerItem)
+            } failure: { _, _, error in
+                continuation.resume(throwing: error)
+            }
+            didRequestHandler?(self, requestId)
+        }
+    }
+    
+    func requestLivePhoto(
+        targetSize: CGSize = .zero,
+        didRequestHandler: ((PhotoAsset, PHImageRequestID?, LocalLivePhotoRequest?) -> Void)? = nil,
+        iCloudHandler: PhotoAssetICloudHandler? = nil,
+        progressHandler: PhotoAssetProgressHandler? = nil
+    ) async throws -> PHLivePhoto {
+        let screenSize = await UIScreen._size
+        return try await withCheckedThrowingContinuation { continuation in
+            if mediaSubType == .localLivePhoto {
+                let request = requestLocalLivePhoto { _, livePhoto in
+                    continuation.resume(returning: livePhoto)
+                } failure: { _, _, error in
+                    continuation.resume(throwing: error)
+                }
+                didRequestHandler?(self, nil, request)
+            }else {
+                let size = targetSize.equalTo(.zero) ? screenSize : targetSize
+                let request = requestLivePhoto(targetSize: size, iCloudHandler: iCloudHandler, progressHandler: progressHandler) { _, livePhoto, _ in
+                    continuation.resume(returning: livePhoto)
+                } failure: { _, _, error in
+                    continuation.resume(throwing: error)
+                }
+                didRequestHandler?(self, request, nil)
+            }
+        }
+    }
+}
+
+extension PhotoAsset {
+    @discardableResult
+    func requestThumImage(
+        filterEditor: Bool = false,
+        iCloudHandler: PhotoAssetICloudHandler? = nil,
+        progressHandler: PhotoAssetProgressHandler? = nil,
+        resultHandler: @escaping (PhotoAsset, UIImage?, [AnyHashable: Any]?) -> Void
+    ) -> PHImageRequestID? {
+        #if HXPICKER_ENABLE_EDITOR
+        if let photoEdit = photoEditedResult {
+            resultHandler(self, photoEdit.image, nil)
+            return nil
+        }
+        if let videoEdit = videoEditedResult {
+            resultHandler(self, videoEdit.coverImage, nil)
+            return nil
+        }
+        #endif
+        guard let phAsset else {
+            requestLocalImage(
+                urlType: .original,
+                targetWidth: AssetManager.thumbnailTargetWidth
+            ) { (image, photoAsset) in
+                resultHandler(photoAsset, image, nil)
+            }
+            return nil
+        }
+        return AssetManager.requestImage(for: phAsset, targetSize: phAsset.thumTargetSize, resizeMode: .fast) {
+            iCloudHandler?(self, $0)
+        } progressHandler: { progress, error, stop, info in
+            DispatchQueue.main.async {
+                progressHandler?(self, progress)
+            }
+        } resultHandler: {
+            resultHandler(self, $0, $1)
         }
     }
 }

@@ -47,8 +47,12 @@ class CameraManager: NSObject {
     private var captureState: CaptureState = .end
     private var didStartWriter = false
     private var didWriterVideoInput = false
+    private var writerVideoInputTime: CMTime?
     private var videoInpuCompletion = false
     private var audioInpuCompletion = false
+    private var isDevicePortrait = true
+    private let context = CIContext(options: nil)
+    
     let videoFilter: CameraRenderer
     let photoFilter: CameraRenderer
     var filterIndex: Int {
@@ -64,18 +68,23 @@ class CameraManager: NSObject {
     init(config: CameraConfiguration) {
         self.flashMode = config.flashMode
         self.config = config
-        var photoFilters = self.config.photoFilters
-        photoFilters.insert(OriginalFilter(), at: 0)
-        var videoFilters = self.config.videoFilters
-        videoFilters.insert(OriginalFilter(), at: 0)
-        var index = config.defaultFilterIndex
-        if index == -1 {
-            index = 0
+        if config.cameraType == .metal {
+            var photoFilters = self.config.photoFilters
+            photoFilters.insert(OriginalFilter(), at: 0)
+            var videoFilters = self.config.videoFilters
+            videoFilters.insert(OriginalFilter(), at: 0)
+            var index = config.defaultFilterIndex
+            if index == -1 {
+                index = 0
+            }else {
+                index += 1
+            }
+            self.photoFilter = .init(photoFilters, index)
+            self.videoFilter = .init(videoFilters, index)
         }else {
-            index += 1
+            self.photoFilter = .init([], 0)
+            self.videoFilter = .init([], 0)
         }
-        self.photoFilter = .init(photoFilters, index)
-        self.videoFilter = .init(videoFilters, index)
         super.init()
         videoOutput = AVCaptureVideoDataOutput()
         videoOutput.videoSettings = [
@@ -419,8 +428,13 @@ extension CameraManager {
         guard let device = activeCamera else {
             return
         }
-        let textureRect = CGRect(origin: point, size: .zero)
-        let deviceRect = videoOutput.metadataOutputRectConverted(fromOutputRect: textureRect)
+        let deviceRect: CGRect
+        if config.cameraType == .metal {
+            let textureRect = CGRect(origin: point, size: .zero)
+            deviceRect = videoOutput.metadataOutputRectConverted(fromOutputRect: textureRect)
+        }else {
+            deviceRect = .init(origin: point, size: .zero)
+        }
         let exposureMode = AVCaptureDevice.ExposureMode.continuousAutoExposure
         let focusMode = AVCaptureDevice.FocusMode.continuousAutoFocus
         let canResetFocus = device.isFocusPointOfInterestSupported &&
@@ -475,10 +489,24 @@ extension CameraManager: AVCapturePhotoCaptureDelegate {
                 kCVPixelBufferPixelFormatTypeKey as String: Int(kCVPixelFormatType_32BGRA)
             ]
         )
+        var imageWidth = Int(config.sessionPreset.size.height)
+        var imageHeight = Int(config.sessionPreset.size.width)
+        if !UIDevice.isPad {
+            let ratioSize = config.aspectRatio.size
+            switch ratioSize {
+            case .init(width: -1, height: -1):
+                let scale = UIScreen.main.bounds.height / UIScreen.main.bounds.width
+                imageHeight = Int(CGFloat(imageWidth) / scale)
+            case .zero, .init(width: 9, height: 16):
+                break
+            default:
+                imageWidth = Int(CGFloat(imageHeight) / ratioSize.width * ratioSize.height)
+            }
+        }
         settings.previewPhotoFormat = [
             kCVPixelBufferPixelFormatTypeKey as String: Int(kCVPixelFormatType_32BGRA),
-            kCVPixelBufferWidthKey as String: config.sessionPreset.size.height,
-            kCVPixelBufferHeightKey as String: config.sessionPreset.size.width
+            kCVPixelBufferWidthKey as String: imageWidth,
+            kCVPixelBufferHeightKey as String: imageHeight
         ]
         // Catpure Heif when available.
 //        if #available(iOS 11.0, *) {
@@ -554,7 +582,7 @@ extension CameraManager: AVCapturePhotoCaptureDelegate {
             target: sampleBuffer,
             attachmentMode: kCMAttachmentMode_ShouldPropagate
         )
-        finishProcessingPhoto(photoPixelBuffer, metaData)
+        finishProcessingPhoto(cropPhotoPixelBuffer(photoPixelBuffer), metaData)
     }
     
     @available(iOS 11.0, *)
@@ -563,7 +591,46 @@ extension CameraManager: AVCapturePhotoCaptureDelegate {
             photoCompletion?(nil)
             return
         }
-        finishProcessingPhoto(photoPixelBuffer, photo.metadata as CFDictionary)
+        finishProcessingPhoto(cropPhotoPixelBuffer(photoPixelBuffer), photo.metadata as CFDictionary)
+    }
+    
+    func cropPhotoPixelBuffer(_ photoPixelBuffer: CVPixelBuffer) -> CVPixelBuffer {
+        var pixelBuffer = photoPixelBuffer
+        if !UIDevice.isPad {
+            var imageWidth = CVPixelBufferGetWidth(pixelBuffer)
+            var imageHeight = CVPixelBufferGetHeight(pixelBuffer)
+            var ciImage = CIImage(cvPixelBuffer: pixelBuffer)
+            var hasCrop = false
+            let baseWidth = imageWidth
+            let baseHeight = imageHeight
+            let ratioSize = config.aspectRatio.size
+            switch ratioSize {
+            case .init(width: -1, height: -1):
+                let scale = UIScreen.main.bounds.height / UIScreen.main.bounds.width
+                imageHeight = Int(CGFloat(imageWidth) / scale)
+                let y = abs((baseHeight - imageHeight) / 2)
+                ciImage = ciImage.cropped(
+                    to: .init(x: 0, y: y, width: imageWidth, height: imageHeight)
+                ).transformed(by: .init(translationX: 0, y: -CGFloat(y)))
+                hasCrop = true
+            case .zero, .init(width: 9, height: 16):
+                break
+            default:
+                imageWidth = Int(CGFloat(imageHeight) / ratioSize.width * ratioSize.height)
+                let x = abs((baseWidth - imageWidth) / 2)
+                ciImage = ciImage.cropped(
+                    to: .init(x: x, y: 0, width: imageWidth, height: imageHeight)
+                ).transformed(by: .init(translationX: -CGFloat(x), y: 0))
+                hasCrop = true
+            }
+            if hasCrop {
+                if let newPixelBuffer = PhotoTools.createPixelBuffer(.init(width: imageWidth, height: imageHeight)) {
+                    context.render(ciImage, to: newPixelBuffer)
+                    pixelBuffer = newPixelBuffer
+                }
+            }
+        }
+        return pixelBuffer
     }
     
     func finishProcessingPhoto(
@@ -578,7 +645,7 @@ extension CameraManager: AVCapturePhotoCaptureDelegate {
         )
         DispatchQueue.global().async {
             var finalPixelBuffer = photoPixelBuffer
-            if self.photoFilter.filterIndex > 0 {
+            if self.config.cameraType == .metal, self.photoFilter.filterIndex > 0 {
                 if !self.photoFilter.isPrepared {
                     if let formatDescription = photoFormatDescription {
                         self.photoFilter.prepare(
@@ -652,7 +719,7 @@ extension CameraManager: AVCaptureVideoDataOutputSampleBufferDelegate,
                 return
             }
             finalVideoPixelBuffer = videoPixelBuffer
-            if videoFilter.filterIndex > 0 {
+            if config.cameraType == .metal, videoFilter.filterIndex > 0 {
                 if !videoFilter.isPrepared {
                     videoFilter.prepare(
                         with: formatDescription,
@@ -701,7 +768,9 @@ extension CameraManager: AVCaptureVideoDataOutputSampleBufferDelegate,
                     self.didStartRecording()
                 }
                 let sampleTime = CMSampleBufferGetPresentationTimeStamp(sampleBuffer)
-                assetWriter.startSession(atSourceTime: sampleTime)
+                let startingTimeDelay = CMTimeMakeWithSeconds(0.1, preferredTimescale: sampleTime.timescale)
+                let startTimeToUse = CMTimeAdd(sampleTime, startingTimeDelay)
+                assetWriter.startSession(atSourceTime: startTimeToUse)
                 didStartWriter = true
             }
             inputAppend(output, sampleBuffer, finalVideoPixelBuffer)
@@ -756,9 +825,17 @@ extension CameraManager: AVCaptureVideoDataOutputSampleBufferDelegate,
     private func audioInputAppend(
         _ sampleBuffer: CMSampleBuffer
     ) {
+        let sampleTime = CMSampleBufferGetPresentationTimeStamp(sampleBuffer)
+        var allowInput: Bool = true
+        if let time = writerVideoInputTime, sampleTime < time {
+            allowInput = false
+        }else if writerVideoInputTime == nil {
+            allowInput = false
+        }
         if let audioInput = assetWriterAudioInput,
            audioInput.isReadyForMoreMediaData,
-           didWriterVideoInput {
+           didWriterVideoInput,
+           allowInput {
             audioInput.append(sampleBuffer)
         }
     }
@@ -768,10 +845,48 @@ extension CameraManager: AVCaptureVideoDataOutputSampleBufferDelegate,
     ) {
         if let assetWriterVideoInput = assetWriterVideoInput,
            assetWriterVideoInput.assetWriterInput.isReadyForMoreMediaData {
-            guard let pixelBuffer = pixelBuffer else { return }
+            guard var pixelBuffer = pixelBuffer else { return }
             let sampleTime = CMSampleBufferGetPresentationTimeStamp(sampleBuffer)
+            var videoWidth = CVPixelBufferGetWidth(pixelBuffer)
+            var videoHeight = CVPixelBufferGetHeight(pixelBuffer)
+            var ciImage = CIImage(cvPixelBuffer: pixelBuffer)
+            var hasCrop = false
+            let baseWidth = videoWidth
+            let baseHeight = videoHeight
+            
+            if !UIDevice.isPad {
+                let ratioSize = config.aspectRatio.size
+                switch ratioSize {
+                case .init(width: -1, height: -1):
+                    let scale = UIScreen.main.bounds.height / UIScreen.main.bounds.width
+                    videoHeight = Int(CGFloat(videoWidth) / scale)
+                    let y = abs((baseHeight - videoHeight) / 2)
+                    ciImage = ciImage.cropped(
+                        to: .init(x: 0, y: y, width: videoWidth, height: videoHeight)
+                    ).transformed(by: .init(translationX: 0, y: -CGFloat(y)))
+                    hasCrop = true
+                case .zero, .init(width: 9, height: 16):
+                    break
+                default:
+                    videoWidth = Int(CGFloat(videoHeight) / ratioSize.width * ratioSize.height)
+                    let x = abs((baseWidth - videoWidth) / 2)
+                    ciImage = ciImage.cropped(
+                        to: .init(x: x, y: 0, width: videoWidth, height: videoHeight)
+                    ).transformed(by: .init(translationX: -CGFloat(x), y: 0))
+                    hasCrop = true
+                }
+                if hasCrop {
+                    if let newPixelBuffer = PhotoTools.createPixelBuffer(.init(width: videoWidth, height: videoHeight)) {
+                        context.render(ciImage, to: newPixelBuffer)
+                        pixelBuffer = newPixelBuffer
+                    }
+                }
+            }
             if assetWriterVideoInput.append(pixelBuffer, withPresentationTime: sampleTime) {
-                if !didWriterVideoInput { didWriterVideoInput = true }
+                if !didWriterVideoInput {
+                    writerVideoInputTime = sampleTime
+                    didWriterVideoInput = true
+                }
             }
         }
     }
@@ -786,14 +901,26 @@ extension CameraManager: AVCaptureVideoDataOutputSampleBufferDelegate,
         } catch {
             return false
         }
-        let videoWidth: Int
-        let videoHeight: Int
+        var videoWidth: Int
+        var videoHeight: Int
         if let pixelBuffer = CMSampleBufferGetImageBuffer(sampleBuffer) {
             videoWidth = CVPixelBufferGetWidth(pixelBuffer)
             videoHeight = CVPixelBufferGetHeight(pixelBuffer)
         }else {
             videoWidth = Int(config.sessionPreset.size.height)
             videoHeight = Int(config.sessionPreset.size.width)
+        }
+        if !UIDevice.isPad {
+            let ratioSize = config.aspectRatio.size
+            switch ratioSize {
+            case .init(width: -1, height: -1):
+                let scale = UIScreen.main.bounds.height / UIScreen.main.bounds.width
+                videoHeight = Int(CGFloat(videoWidth) / scale)
+            case .zero, .init(width: 9, height: 16):
+                break
+            default:
+                videoWidth = Int(CGFloat(videoHeight) / ratioSize.width * ratioSize.height)
+            }
         }
 //        var bitsPerPixel: Float
 //        let numPixels = videoWidth * videoHeight
@@ -836,14 +963,57 @@ extension CameraManager: AVCaptureVideoDataOutputSampleBufferDelegate,
             ]
         )
         videoInput.expectsMediaDataInRealTime = true
-//        videoInput.transform = .init(rotationAngle: .pi * 0.5)
-//        if currentOrienation == .landscapeRight {
-//            videoInput.transform = videoInput.transform.rotated(by: .pi * -0.5)
-//        }else if currentOrienation == .landscapeLeft {
-//            videoInput.transform = videoInput.transform.rotated(by: .pi * 0.5)
-//        }
+        
+        var isFront: Bool = false
         if let position = activeCamera?.position, position == .front {
+            isFront = true
             videoInput.transform = videoInput.transform.scaledBy(x: -1, y: 1)
+        }
+        
+        if isDevicePortrait {
+            if currentOrienation == .landscapeRight {
+                if config.cameraType == .metal {
+                    if !isFront {
+                        videoInput.transform = videoInput.transform.rotated(by: .pi * -0.5)
+                    }else {
+                        videoInput.transform = videoInput.transform.rotated(by: .pi * 0.5)
+                    }
+                }else {
+                    if isFront {
+                        videoInput.transform = videoInput.transform.rotated(by: .pi)
+                    }
+                }
+            }else if currentOrienation == .landscapeLeft {
+                if config.cameraType == .metal {
+                    if !isFront {
+                        videoInput.transform = videoInput.transform.rotated(by: .pi * 0.5)
+                    }else {
+                        videoInput.transform = videoInput.transform.rotated(by: -.pi * 0.5)
+                    }
+                }else {
+                    if !isFront {
+                        videoInput.transform = videoInput.transform.rotated(by: .pi)
+                    }
+                }
+            }else {
+                if config.cameraType == .normal {
+                    videoInput.transform = videoInput.transform.rotated(by: .pi * 0.5)
+                }
+            }
+        }else {
+            if currentOrienation == .landscapeRight {
+                if config.cameraType == .normal {
+                    if isFront {
+                        videoInput.transform = videoInput.transform.rotated(by: .pi)
+                    }
+                }
+            }else if currentOrienation == .landscapeLeft {
+                if config.cameraType == .normal {
+                    if !isFront {
+                        videoInput.transform = videoInput.transform.rotated(by: .pi)
+                    }
+                }
+            }
         }
         
         let audioInput = AVAssetWriterInput(
@@ -877,8 +1047,10 @@ extension CameraManager: AVCaptureVideoDataOutputSampleBufferDelegate,
     }
     
     func resetFilter() {
-        videoFilter.reset()
-        photoFilter.reset()
+        if config.cameraType == .metal {
+            videoFilter.reset()
+            photoFilter.reset()
+        }
     }
 }
 
@@ -904,9 +1076,11 @@ extension CameraManager {
         }
         if let connection = photoOutput.connection(with: .video) {
             if connection.isVideoMirroringSupported {
+                connection.automaticallyAdjustsVideoMirroring = false
                 connection.isVideoMirrored = false
             }
         }
+        isDevicePortrait = UIDevice.isPortrait
         recordDuration = 0
         captureState = .start
         isRecording = true
@@ -965,6 +1139,7 @@ extension CameraManager {
     func resetAssetWriter() {
         didStartWriter = false
         didWriterVideoInput = false
+        writerVideoInputTime = nil
         videoInpuCompletion = false
         audioInpuCompletion = false
         assetWriterVideoInput = nil

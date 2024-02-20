@@ -1,5 +1,100 @@
 # 更新日志 
 
+## 4.1.6
+
+### 新增
+
+- 所有图标可自定义`HX.ImageResource`
+- 所有文本内容可自定义`HX.TextManager`
+
+- Picker
+  - 一键设置主题色`config.themeColor = .systemBlue`[[620]](https://github.com/SilenceLove/HXPhotoPicker/issues/620)
+  - `PhotoAsset`新增可指定`UIImage`的`size`[[624]](https://github.com/SilenceLove/HXPhotoPicker/issues/624)
+  ```
+    /// targetSize: 指定imageSize
+    /// targetMode: 裁剪模式
+    let image = try await photoAsset.image(targetSize: .init(width: 200, height: 200), targetMode: .fill)
+  ```
+  - `PhotoAsset`新增获取用于展示的内容
+  ```
+    /// 获取缩略图
+    let thumImage = try await photoAsset.requesthumbnailImage()
+
+    /// 获取预览图
+    let previewImage = try await photoAsset.requestPreviewImage()
+
+    /// 获取 AVAsset
+    let avAsset = try await photoAsset.requestAVAsset()
+
+    /// 获取 AVPlayerItem
+    let playerItem = try await photoAsset.requestPlayerItem()
+
+    /// 获取 PHLivePhoto
+    let livePhoto = try await photoAsset.requestLivePhoto()
+  ```
+
+- Camera
+  - 相机画面大小可以自定义`config.aspectRatio = ._9x16`
+  
+### 修复
+
+- Editor
+  - 使用圆形裁剪框并且旋转裁剪后，再次进入编辑界面内容偏移的问题
+  
+### 优化
+
+- Picker
+  - 快速滑动显示效果
+
+## 4.1.5
+
+### 修复
+
+- [[618]](https://github.com/SilenceLove/HXPhotoPicker/issues/618)
+- [[616]](https://github.com/SilenceLove/HXPhotoPicker/issues/616)
+- [[614]](https://github.com/SilenceLove/HXPhotoPicker/issues/614)
+
+## 4.1.4
+
+### 修复
+
+- [[613]](https://github.com/SilenceLove/HXPhotoPicker/issues/613)
+- [[612]](https://github.com/SilenceLove/HXPhotoPicker/issues/612)
+- [[610]](https://github.com/SilenceLove/HXPhotoPicker/issues/610)
+- [[591]](https://github.com/SilenceLove/HXPhotoPicker/issues/591)
+
+## 4.1.3
+
+### 修复
+
+- Picker
+  - 预览界面底部列表可能错乱的问题
+- [[605]](https://github.com/SilenceLove/HXPhotoPicker/issues/605)
+- [[599]](https://github.com/SilenceLove/HXPhotoPicker/issues/599)
+
+## 4.1.2
+
+### 新增
+
+- Picker
+  - 照片列表的`PhotoToolbar`支持显示已选择的列表视图
+  - 预览界面的`PhotoToolbar`新增预览数据的列表视图
+
+### 修复
+
+- Picker
+  - 选中原图时，快速选择/取消选择照片可能会导致崩溃的问题
+  - 当相册权限限制部分照片时，选择照片之后切换相册导致`PhotoToolbar`显示的数量出错的问题
+  - 相册列表可能会空白的问题
+  - 当gif显示为静态图时获取地址后缀名错误的问题
+  - 最大选择数的判断逻辑修改
+  
+### 优化
+
+- Picker
+  - `PhotoToolbar`横屏时安全区域距离对齐
+  - 预览界面加载图片的逻辑优化，初始加载时图片更加清晰
+
 ## 4.1.1
 
 ### 新增

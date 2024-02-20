@@ -85,7 +85,7 @@
 
 ```swift
 dependencies: [
-    .package(url: "https://github.com/SilenceLove/HXPhotoPicker.git", .upToNextMajor(from: "4.1.1"))
+    .package(url: "https://github.com/SilenceLove/HXPhotoPicker.git", .upToNextMajor(from: "4.1.6"))
 ]
 ```
 
@@ -225,6 +225,11 @@ extension ViewController: PhotoPickerControllerDelegate {
 // compression: if not passed, no compression 
 let image: UIImage = try await photoAsset.object(compression)
 
+/// Get the `UIImage` of the specified `Size`
+/// targetSize: specify imageSize
+/// targetMode: crop mode
+let image = try await photoAsset.image(targetSize: .init(width: 200, height: 200), targetMode: .fill)
+
 // compressionQuality: Compress parameters, if not passed, no compression 
 photoAsset.getImage(compressionQuality: compressionQuality) { image in
     print(image)
@@ -270,6 +275,25 @@ photoAsset.getURL(compression: compression) { result in
 }
 ```
 
+#### Get Other
+
+```swift
+/// Get thumbnail
+let thumImage = try await photoAsset.requesthumbnailImage()
+
+/// Get preview
+let previewImage = try await photoAsset.requestPreviewImage()
+
+/// Get AVAsset
+let avAsset = try await photoAsset.requestAVAsset()
+
+/// Get AVPlayerItem
+let playerItem = try await photoAsset.requestPlayerItem()
+
+/// Get PHLivePhoto
+let livePhoto = try await photoAsset.requestLivePhoto()
+```
+
 ## Release Notes
 
 <details open id="Latest updates">
@@ -277,7 +301,7 @@ photoAsset.getURL(compression: compression) { result in
   
 | Version | Release Date | Xcode | Swift | iOS |
 | ---- | ----  | ---- | ---- | ---- |
-| [v4.1.1](https://github.com/SilenceLove/HXPhotoPicker/blob/master/Documentation/RELEASE_NOTE.md#411) | 2023-11-14 | 15.0.0 | 5.9.0 | 12.0+ |
+| [v4.1.6](https://github.com/SilenceLove/HXPhotoPicker/blob/master/Documentation/RELEASE_NOTE.md#416) | 2024-02-16 | 15.0.0 | 5.9.0 | 12.0+ |
 
 </details>
 
@@ -286,6 +310,11 @@ photoAsset.getURL(compression: compression) { result in
   
 | Version | Release Date | Xcode | Swift | iOS |
 | ---- | ----  | ---- | ---- | ---- |
+| [v4.1.5](https://github.com/SilenceLove/HXPhotoPicker/blob/master/Documentation/RELEASE_NOTE.md#415) | 2024-01-10 | 15.0.0 | 5.9.0 | 12.0+ |
+| [v4.1.4](https://github.com/SilenceLove/HXPhotoPicker/blob/master/Documentation/RELEASE_NOTE.md#414) | 2023-12-24 | 15.0.0 | 5.9.0 | 12.0+ |
+| [v4.1.3](https://github.com/SilenceLove/HXPhotoPicker/blob/master/Documentation/RELEASE_NOTE.md#413) | 2023-12-16 | 15.0.0 | 5.9.0 | 12.0+ |
+| [v4.1.2](https://github.com/SilenceLove/HXPhotoPicker/blob/master/Documentation/RELEASE_NOTE.md#412) | 2023-12-02 | 15.0.0 | 5.9.0 | 12.0+ |
+| [v4.1.1](https://github.com/SilenceLove/HXPhotoPicker/blob/master/Documentation/RELEASE_NOTE.md#411) | 2023-11-14 | 15.0.0 | 5.9.0 | 12.0+ |
 | [v4.1.0](https://github.com/SilenceLove/HXPhotoPicker/blob/master/Documentation/RELEASE_NOTE.md#410) | 2023-11-07 | 15.0.0 | 5.9.0 | 12.0+ |
 | [v4.0.9](https://github.com/SilenceLove/HXPhotoPicker/blob/master/Documentation/RELEASE_NOTE.md#409) | 2023-10-22 | 15.0.0 | 5.9.0 | 12.0+ |
 | [v4.0.8](https://github.com/SilenceLove/HXPhotoPicker/blob/master/Documentation/RELEASE_NOTE.md#408) | 2023-10-13 | 15.0.0 | 5.9.0 | 12.0+ |
@@ -331,6 +360,7 @@ HXPhotoPicker is released under the MIT license. See LICENSE for details.
 
 [![Stargazers over time](https://starchart.cc/SilenceLove/HXPhotoPicker.svg)](https://starchart.cc/SilenceLove/HXPhotoPicker)
 
-[🔝](#readme)
+[🔝](https://github.com/SilenceLove/HXPhotoPicker/blob/master/Documentation/README_EN.md#-features)
+
 
 

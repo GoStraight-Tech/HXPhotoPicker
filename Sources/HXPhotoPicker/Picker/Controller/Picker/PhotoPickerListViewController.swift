@@ -594,11 +594,11 @@ extension PhotoPickerListViewController: UICollectionViewDelegate {
                 let image: UIImage?
                 let attributes: UIMenuElement.Attributes
                 if photoAsset.isSelected {
-                    title = "取消选择".localized
+                    title = .textPhotoList.hapticTouchDeselectedTitle.text
                     image = UIImage(systemName: "minus.circle")
                     attributes = [.destructive]
                 }else {
-                    title = "选择".localized
+                    title = .textPhotoList.hapticTouchSelectedTitle.text
                     image = UIImage(systemName: "checkmark.circle")
                     attributes = []
                 }
@@ -625,7 +625,7 @@ extension PhotoPickerListViewController: UICollectionViewDelegate {
             }
             if self.pickerConfig.editorOptions.contains(options) {
                 let edit = UIAction(
-                    title: "编辑".localized,
+                    title: .textPhotoList.hapticTouchEditTitle.text,
                     image: UIImage(systemName: "slider.horizontal.3")
                 ) { [weak self] _ in
                     guard let self = self else { return }
@@ -635,7 +635,7 @@ extension PhotoPickerListViewController: UICollectionViewDelegate {
             }
             if photoAsset.editedResult != nil {
                 let removeEdit = UIAction(
-                    title: "清空已编辑的内容".localized,
+                    title: .textPhotoList.hapticTouchRemoveEditTitle.text,
                     image: .init(systemName: "xmark.circle"),
                     attributes: [.destructive]
                 ) { [weak self] _ in
@@ -652,6 +652,7 @@ extension PhotoPickerListViewController: UICollectionViewDelegate {
                         photoAsset.editedResult = nil
                         cell.updatePhotoAsset(photoAsset)
                     }
+                    self.delegate?.photoList(self, updateAsset: photoAsset)
                 }
                 menus.append(removeEdit)
             }
@@ -719,6 +720,11 @@ extension PhotoPickerListViewController: UICollectionViewDelegate {
         PhotoManager.shared.thumbnailLoadModeDidChange(.simplify)
         return true
     }
+    public func scrollViewWillBeginDragging(_ scrollView: UIScrollView) {
+        if scrollToTop { return }
+        updateCellLoadMode(.complete)
+        cellReloadImage()
+    }
     public func scrollViewDidEndDragging(
         _ scrollView: UIScrollView,
         willDecelerate decelerate: Bool
@@ -753,8 +759,15 @@ extension PhotoPickerListViewController: UICollectionViewDelegate {
         scrollReachDistance = true
     }
     public func scrollViewDidScroll(_ scrollView: UIScrollView) {
+        let offsetY = scrollView.contentOffset.y
+        if scrollToTop {
+            let scrollY = offsetY + scrollView.contentInset.top
+            if scrollY < scrollView.height {
+                updateCellLoadMode(.complete)
+            }
+        }
         if didChangeCellLoadMode {
-            if abs(targetOffsetY - scrollView.contentOffset.y) < 1250 {
+            if abs(targetOffsetY - offsetY) < 1250 {
                 updateCellLoadMode(.complete)
             }
         }
@@ -768,7 +781,9 @@ extension PhotoPickerListViewController: UICollectionViewDelegate {
         didChangeCellLoadMode = mode != .complete
     }
     public func cellReloadImage() {
-        if !scrollEndReload && !didChangeCellLoadMode {
+        if !scrollEndReload &&
+            !didChangeCellLoadMode &&
+            PhotoManager.shared.thumbnailLoadMode == .complete {
             return
         }
         for baseCell in collectionView.visibleCells where baseCell is PhotoPickerBaseViewCell {

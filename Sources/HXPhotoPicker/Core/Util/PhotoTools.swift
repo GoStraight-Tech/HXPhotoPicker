@@ -15,30 +15,6 @@ import ImageIO
 
 public struct PhotoTools {
     
-    /// 根据PHAsset资源获取对应的目标大小
-    public static func transformTargetWidthToSize(
-        targetWidth: CGFloat,
-        asset: PHAsset
-    ) -> CGSize {
-        let scale: CGFloat = 0.8
-        let aspectRatio = CGFloat(asset.pixelWidth) / CGFloat(asset.pixelHeight)
-        var width = targetWidth
-        if asset.pixelWidth < Int(targetWidth) {
-            width *= 0.5
-        }
-        var height = width / aspectRatio
-        let maxHeight = UIDevice.screenSize.height
-        if height > maxHeight {
-            width = maxHeight / height * width * scale
-            height = maxHeight * scale
-        }
-        if height < targetWidth && width >= targetWidth {
-            width = targetWidth / height * width * scale
-            height = targetWidth * scale
-        }
-        return CGSize(width: width, height: height)
-    }
-    
     /// 转换视频时长为 mm:ss 格式的字符串
     public static func transformVideoDurationToString(
         duration: TimeInterval
@@ -549,7 +525,7 @@ public struct PhotoTools {
         return layer
     }
     
-    #if HXPICKER_ENABLE_EDITOR || HXPICKER_ENABLE_CAMERA
+    #if HXPICKER_ENABLE_EDITOR || HXPICKER_ENABLE_EDITOR_VIEW || HXPICKER_ENABLE_CAMERA
     static func getColor(red: Int, green: Int, blue: Int, alpha: Int = 255) -> CIColor {
         return CIColor(red: CGFloat(Double(red) / 255.0),
                        green: CGFloat(Double(green) / 255.0),
@@ -560,6 +536,21 @@ public struct PhotoTools {
     static func getColorImage(red: Int, green: Int, blue: Int, alpha: Int = 255, rect: CGRect) -> CIImage {
         let color = self.getColor(red: red, green: green, blue: blue, alpha: alpha)
         return CIImage(color: color).cropped(to: rect)
+    }
+    
+    
+    static func createPixelBuffer(_ size: CGSize) -> CVPixelBuffer? {
+        var pixelBuffer: CVPixelBuffer?
+        let pixelBufferAttributes = [kCVPixelBufferIOSurfacePropertiesKey: [:] as [String: Any]]
+        CVPixelBufferCreate(
+            nil,
+            Int(size.width),
+            Int(size.height),
+            kCVPixelFormatType_32BGRA,
+            pixelBufferAttributes as CFDictionary,
+            &pixelBuffer
+        )
+        return pixelBuffer
     }
     #endif
      

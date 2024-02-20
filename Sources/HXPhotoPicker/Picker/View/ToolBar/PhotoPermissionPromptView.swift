@@ -21,7 +21,7 @@ class PhotoPermissionPromptView: UIView {
     private var promptArrow: UIImageView!
     
     private func initView() {
-        let promptIconImage = UIImage.image(for: "hx_picker_photolist_bottom_prompt")?.withRenderingMode(.alwaysTemplate)
+        let promptIconImage: UIImage? = .imageResource.picker.photoList.bottomView.permissionsPrompt.image?.withRenderingMode(.alwaysTemplate)
         promptIcon = UIImageView(image: promptIconImage)
         if let imageSize = promptIcon.image?.size {
             promptIcon.size = imageSize
@@ -29,13 +29,13 @@ class PhotoPermissionPromptView: UIView {
         addSubview(promptIcon)
         
         promptLb = UILabel(frame: CGRect(x: 0, y: 0, width: 0, height: 60))
-        promptLb.text = "无法访问相册中所有照片，\n请允许访问「照片」中的「所有照片」".localized
-        promptLb.font = .systemFont(ofSize: 15)
+        promptLb.text = .textPhotoList.bottomView.permissionsTitle.text
+        promptLb.font = .textPhotoList.bottomView.permissionsTitleFont
         promptLb.numberOfLines = 0
         promptLb.adjustsFontSizeToFitWidth = true
         addSubview(promptLb)
         
-        let promptArrowImage = UIImage.image(for: "hx_picker_photolist_bottom_prompt_arrow")?.withRenderingMode(.alwaysTemplate)
+        let promptArrowImage = HX.imageResource.picker.photoList.bottomView.permissionsArrow.image?.withRenderingMode(.alwaysTemplate)
         promptArrow = UIImageView(image: promptArrowImage)
         if let imageSize = promptArrow.image?.size {
             promptArrow.size = imageSize
@@ -85,9 +85,18 @@ class PhotoPermissionPromptView: UIView {
     override func layoutSubviews() {
         super.layoutSubviews()
         let viewHeight = height
-        promptIcon.x = 12 + leftMargin
+        let leftMargin = self.leftMargin
+        if leftMargin > 0 {
+            promptIcon.x = leftMargin
+        }else {
+            promptIcon.x = 12
+        }
         promptIcon.centerY = viewHeight * 0.5
-        promptArrow.x = width - 12 - promptArrow.width - UIDevice.rightMargin
+        if UIDevice.rightMargin > 0 {
+            promptArrow.x = width - promptArrow.width - UIDevice.rightMargin
+        }else {
+            promptArrow.x = width - 12 - promptArrow.width
+        }
         promptLb.x = promptIcon.frame.maxX + 12
         promptLb.width = promptArrow.x - promptLb.x - 12
         promptLb.centerY = viewHeight * 0.5

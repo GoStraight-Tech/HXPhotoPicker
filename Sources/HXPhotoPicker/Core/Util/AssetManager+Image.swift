@@ -34,18 +34,22 @@ public extension AssetManager {
         let options = PHImageRequestOptions()
         options.resizeMode = .fast
         var isSimplify = false
+        let targetSize: CGSize
         #if HXPICKER_ENABLE_PICKER
         isSimplify = PhotoManager.shared.thumbnailLoadMode == .simplify
+        if isSimplify {
+            options.deliveryMode = .fastFormat
+        }
+        targetSize = isSimplify ? .init(
+            width: targetWidth,
+            height: targetWidth
+        ) : asset.cellThumTargetSize(for: targetWidth)
+        #else
+        targetSize = asset.cellThumTargetSize(for: targetWidth)
         #endif
         return requestImage(
             for: asset,
-            targetSize: isSimplify ? .init(
-                width: targetWidth,
-                height: targetWidth
-            ) : PhotoTools.transformTargetWidthToSize(
-                targetWidth: targetWidth,
-                asset: asset
-            ),
+            targetSize: targetSize,
             options: options
         ) { (image, info) in
             DispatchQueue.main.async {
@@ -75,5 +79,70 @@ public extension AssetManager {
             options: options,
             resultHandler: resultHandler
         )
+    }
+    
+    @discardableResult
+    static func requestImage(
+        for asset: PHAsset,
+        targetSize: CGSize,
+        deliveryMode: PHImageRequestOptionsDeliveryMode = .opportunistic,
+        resizeMode: PHImageRequestOptionsResizeMode,
+        normalizedCropRect: CGRect = .zero,
+        isNetworkAccessAllowed: Bool,
+        progressHandler: PHAssetImageProgressHandler?,
+        resultHandler: @escaping ImageResultHandler
+    ) -> PHImageRequestID {
+        let options = PHImageRequestOptions()
+        options.deliveryMode = deliveryMode
+        options.resizeMode = resizeMode
+        options.normalizedCropRect = normalizedCropRect
+        options.isNetworkAccessAllowed = isNetworkAccessAllowed
+        options.progressHandler = progressHandler
+        return requestImage(for: asset, targetSize: targetSize, options: options, resultHandler: resultHandler)
+    }
+    
+    @discardableResult
+    static func requestImage(
+        for asset: PHAsset,
+        targetSize: CGSize,
+        deliveryMode: PHImageRequestOptionsDeliveryMode = .opportunistic,
+        resizeMode: PHImageRequestOptionsResizeMode,
+        normalizedCropRect: CGRect = .zero,
+        iCloudHandler: ((PHImageRequestID) -> Void)? = nil,
+        progressHandler: PHAssetImageProgressHandler? = nil,
+        resultHandler: @escaping ImageResultHandler
+    ) -> PHImageRequestID {
+        requestImage(
+            for: asset,
+            targetSize: targetSize,
+            deliveryMode: deliveryMode,
+            resizeMode: resizeMode,
+            normalizedCropRect: normalizedCropRect,
+            isNetworkAccessAllowed: false,
+            progressHandler: nil
+        ) { image, info in
+            DispatchQueue.main.async {
+                guard let image = image else {
+                    if let inICloud = info?.inICloud, inICloud {
+                        let iCloudRequestID = self.requestImage(
+                            for: asset,
+                            targetSize: targetSize,
+                            resizeMode: resizeMode,
+                            isNetworkAccessAllowed: true,
+                            progressHandler: progressHandler
+                        ) { image, info in
+                            DispatchQueue.main.async {
+                                resultHandler(image, info)
+                            }
+                        }
+                        iCloudHandler?(iCloudRequestID)
+                    }else {
+                        resultHandler(image, info)
+                    }
+                    return
+                }
+                resultHandler(image, info)
+            }
+        }
     }
 }

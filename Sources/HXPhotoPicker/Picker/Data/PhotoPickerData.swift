@@ -63,6 +63,7 @@ open class PhotoPickerData {
         if config.selectMode == .single {
             return
         }
+        selectedAssets = assets
         for photoAsset in assets {
             if photoAsset.mediaType == .photo {
                 selectedPhotoAssets.append(photoAsset)
@@ -88,7 +89,6 @@ open class PhotoPickerData {
                 #endif
             }
         }
-        selectedAssets = assets
     }
     
     public var selectedPhotoAssets: [PhotoAsset] = []
@@ -172,24 +172,22 @@ open class PhotoPickerData {
         if photoAsset.mediaType == .photo {
             if config.maximumSelectedPhotoFileSize > 0 {
                 if photoAsset.fileSize > config.maximumSelectedPhotoFileSize {
-                    text = "照片大小超过最大限制".localized + config.maximumSelectedPhotoFileSize.bytesString
+                    text = .textManager.picker.maximumSelectedPhotoFileSizeHudTitle.text + config.maximumSelectedPhotoFileSize.bytesString
                     canSelect = false
                 }
             }
             if !config.allowSelectedTogether {
                 if selectedVideoAssets.count > 0 {
-                    text = "照片和视频不能同时选择".localized
+                    text = .textManager.picker.photoTogetherSelectHudTitle.text
                     canSelect = false
                 }
             }
-            if config.maximumSelectedPhotoCount > 0 {
-                if selectedPhotoAssets.count >= config.maximumSelectedPhotoCount {
-                    text = String.init(format: "最多只能选择%d张照片".localized, arguments: [config.maximumSelectedPhotoCount])
-                    canSelect = false
-                }
+            if config.maximumSelectedPhotoCount > 0, selectedPhotoAssets.count >= config.maximumSelectedPhotoCount {
+                text = String.init(format: .textManager.picker.maximumSelectedPhotoHudTitle.text, arguments: [config.maximumSelectedPhotoCount])
+                canSelect = false
             }else {
                 if selectedAssets.count >= config.maximumSelectedCount && config.maximumSelectedCount > 0 {
-                    text = String.init(format: "已达到最大选择数".localized, arguments: [config.maximumSelectedPhotoCount])
+                    text = .textManager.picker.maximumSelectedHudTitle.text
                     canSelect = false
                 }
             }
@@ -206,7 +204,7 @@ open class PhotoPickerData {
         if photoAsset.mediaType == .video {
             if config.maximumSelectedVideoFileSize > 0 {
                 if photoAsset.fileSize > config.maximumSelectedVideoFileSize {
-                    text = "视频大小超过最大限制".localized + config.maximumSelectedVideoFileSize.bytesString
+                    text = .textManager.picker.maximumSelectedVideoFileSizeHudTitle.text + config.maximumSelectedVideoFileSize.bytesString
                     canSelect = false
                 }
             }
@@ -215,7 +213,7 @@ open class PhotoPickerData {
                     #if HXPICKER_ENABLE_EDITOR
                     if !config.editorOptions.contains(.video) || isFilterEditor {
                         text = String(
-                            format: "视频最大时长为%d秒，无法选择".localized,
+                            format: .textManager.picker.maximumSelectedVideoDurationHudTitle.text,
                             arguments: [config.maximumSelectedVideoDuration]
                         )
                         canSelect = false
@@ -223,7 +221,7 @@ open class PhotoPickerData {
                         if config.maximumVideoEditDuration > 0 &&
                             round(photoAsset.videoDuration) > Double(config.maximumVideoEditDuration) {
                             text = String(
-                                format: "视频可编辑最大时长为%d秒，无法编辑".localized,
+                                format: .textManager.picker.maximumVideoEditDurationHudTitle.text,
                                 arguments: [config.maximumVideoEditDuration]
                             )
                             canSelect = false
@@ -231,7 +229,7 @@ open class PhotoPickerData {
                     }
                     #else
                     text = String(
-                        format: "视频最大时长为%d秒，无法选择".localized,
+                        format: .textManager.picker.maximumSelectedVideoDurationHudTitle.text,
                         arguments: [config.maximumSelectedVideoDuration]
                     )
                     canSelect = false
@@ -241,7 +239,7 @@ open class PhotoPickerData {
             if config.minimumSelectedVideoDuration > 0 {
                 if round(photoAsset.videoDuration) < Double(config.minimumSelectedVideoDuration) {
                     text = String(
-                        format: "视频最小时长为%d秒，无法选择".localized,
+                        format: .textManager.picker.minimumSelectedVideoDurationHudTitle.text,
                         arguments: [config.minimumSelectedVideoDuration]
                     )
                     canSelect = false
@@ -249,18 +247,16 @@ open class PhotoPickerData {
             }
             if !config.allowSelectedTogether {
                 if selectedPhotoAssets.count > 0 {
-                    text = "视频和照片不能同时选择".localized
+                    text = .textManager.picker.videoTogetherSelectHudTitle.text
                     canSelect = false
                 }
             }
-            if config.maximumSelectedVideoCount > 0 {
-                if selectedVideoAssets.count >= config.maximumSelectedVideoCount {
-                    text = String.init(format: "最多只能选择%d个视频".localized, arguments: [config.maximumSelectedVideoCount])
-                    canSelect = false
-                }
+            if config.maximumSelectedVideoCount > 0, selectedVideoAssets.count >= config.maximumSelectedVideoCount {
+                text = String.init(format: .textManager.picker.maximumSelectedVideoHudTitle.text, arguments: [config.maximumSelectedVideoCount])
+                canSelect = false
             }else {
                 if selectedAssets.count >= config.maximumSelectedCount && config.maximumSelectedCount > 0 {
-                    text = String.init(format: "已达到最大选择数".localized, arguments: [config.maximumSelectedPhotoCount])
+                    text = .textManager.picker.maximumSelectedHudTitle.text
                     canSelect = false
                 }
             }
@@ -315,7 +311,7 @@ open class PhotoPickerData {
         guard let index = selectedAssets.firstIndex(of: photoAsset) else {
             return false
         }
-        delegate?.pickerData(self, willUnselectAsset: photoAsset, at: selectedAssets.count - 1)
+        delegate?.pickerData(self, willUnselectAsset: photoAsset, at: index)
         photoAsset.isSelected = false
         if photoAsset.mediaType == .photo {
             selectedPhotoAssets.remove(
@@ -330,7 +326,7 @@ open class PhotoPickerData {
         for (index, asset) in selectedAssets.enumerated() {
             asset.selectIndex = index
         }
-        delegate?.pickerData(self, didUnselectAsset: photoAsset, at: selectedAssets.count)
+        delegate?.pickerData(self, didUnselectAsset: photoAsset, at: index)
         return true
     }
     
@@ -367,9 +363,10 @@ open class PhotoPickerData {
     ) {
         cancelRequestAssetFileSize(isPreview: isPreview)
         let operation = BlockOperation()
+        let assets = selectedAssets
         operation.addExecutionBlock { [unowned operation] in
             var totalFileSize = 0
-            for photoAsset in self.selectedAssets {
+            for photoAsset in assets {
                 if operation.isCancelled { return }
                 if let fileSize = photoAsset.getPFileSize() {
                     totalFileSize += fileSize

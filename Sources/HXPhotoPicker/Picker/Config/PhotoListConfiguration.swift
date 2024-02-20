@@ -45,11 +45,23 @@ public struct PhotoListConfiguration {
     
     /// Cancel button image name
     /// 取消按钮图片名
-    public var cancelImageName: String = "hx_picker_photolist_cancel"
+    public var cancelImageName: String {
+        get { .imageResource.picker.photoList.cancel }
+        set { HX.imageResource.picker.photoList.cancel = newValue }
+    }
     
     /// Cancel button image name in dark mode
     /// 暗黑模式下取消按钮图片名
-    public var cancelDarkImageName: String = "hx_picker_photolist_cancel"
+    public var cancelDarkImageName: String {
+        get { .imageResource.picker.photoList.cancelDark }
+        set { HX.imageResource.picker.photoList.cancelDark = newValue }
+    }
+    
+    /// 导航栏是否显示筛选按钮
+    public var isShowFilterItem: Bool = true
+    
+    public var filterThemeColor: UIColor?
+    public var filterThemeDarkColor: UIColor?
     
     /// Display quantity per line
     /// 每行显示数量
@@ -147,8 +159,6 @@ public struct PhotoListConfiguration {
     /// The bottom shows the number of photos/videos
     /// 底部显示 照片/视频 数量
     public var isShowAssetNumber: Bool = true
-     
-    public var isShowFilterItem: Bool = true
     
     public var assetNumber: AssetNumber = .init()
     
@@ -169,6 +179,21 @@ public struct PhotoListConfiguration {
         #else
         cameraType = .system(.init())
         #endif
+    }
+    
+    public mutating func setThemeColor(_ color: UIColor) {
+        titleView.setThemeColor(color)
+        bottomView.setThemeColor(color)
+        cell.setThemeColor(color)
+        assetNumber.setThemeColor(color)
+        #if HXPICKER_ENABLE_CAMERA && !targetEnvironment(macCatalyst)
+        if var cameraConfig = cameraType.customConfig {
+            cameraConfig.tintColor = color
+            cameraType = .custom(cameraConfig)
+        }
+        #endif
+        filterThemeColor = color
+        filterThemeDarkColor = color
     }
 }
 
@@ -225,13 +250,21 @@ extension PhotoListConfiguration {
         
         /// camera icon
         /// 相机图标
-        public var cameraImageName: String = "hx_picker_photoList_photograph"
+        public var cameraImageName: String {
+            get { .imageResource.picker.photoList.cell.camera }
+            set { HX.imageResource.picker.photoList.cell.camera = newValue }
+        }
         
         /// Camera icon in dark style / icon after successful camera preview
         /// 暗黑风格下的相机图标 / 相机预览成功之后的图标
-        public var cameraDarkImageName: String = "hx_picker_photoList_photograph_white"
+        public var cameraDarkImageName: String {
+            get { .imageResource.picker.photoList.cell.cameraDark }
+            set { HX.imageResource.picker.photoList.cell.cameraDark = newValue }
+        }
         
-        public init() { }
+        public init() {
+            HX.imageResource.picker.photoList.cell.camera = "hx_picker_photoList_photograph"
+        }
     }
 }
 
@@ -298,6 +331,11 @@ extension PhotoListConfiguration {
         public init() {
             textFont = .mediumPingFang(ofSize: 15)
             filterFont = .regularPingFang(ofSize: 13)
+        }
+        
+        public mutating func setThemeColor(_ color: UIColor) {
+            filterContentColor = color
+            filterContentDarkColor = color
         }
     }
 }

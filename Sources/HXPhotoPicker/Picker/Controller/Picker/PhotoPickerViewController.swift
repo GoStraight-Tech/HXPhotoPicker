@@ -25,7 +25,7 @@ public class PhotoPickerViewController: PhotoBaseViewController {
     var albumView: PhotoAlbumList!
     var photoToolbar: PhotoToolBar!
     var isShowToolbar: Bool = false
-    
+    var didInitViews: Bool = false
     var showLoading: Bool = false
     
     var orientationDidChange: Bool = false
@@ -50,8 +50,8 @@ public class PhotoPickerViewController: PhotoBaseViewController {
             listView.view.backgroundColor = isDark ? config.backgroundDarkColor : config.backgroundColor
         }
         let titleColor = isDark ?
-            pickerConfig.navigationTitleDarkColor :
-            pickerConfig.navigationTitleColor
+        pickerConfig.navigationTitleDarkColor :
+        pickerConfig.navigationTitleColor
         if let titleView = titleView {
             titleView.titleColor = titleColor
         }
@@ -65,6 +65,7 @@ public class PhotoPickerViewController: PhotoBaseViewController {
         if #available(iOS 14.5, *) {
             initNavItems()
         }
+        photoToolbar.deviceOrientationDidChanged()
     }
     
     var isDisableLayout: Bool = false
@@ -92,6 +93,25 @@ public class PhotoPickerViewController: PhotoBaseViewController {
             collectionWidth = view.width - 2 * margin
         }
         listView.view.frame = CGRect(x: margin, y: 0, width: collectionWidth, height: view.height)
+        if pickerConfig.albumShowMode.isPop {
+            albumBackgroudView.frame = view.bounds
+            updateAlbumViewFrame()
+            if orientationDidChange {
+                titleView.updateFrame()
+            }
+        }
+        layoutToolbar()
+        if orientationDidChange {
+            orientationDidChange = false
+        }
+        if isFirstLayout {
+            listView.scrollTo(appropriatePlaceAsset)
+            appropriatePlaceAsset = nil
+            isFirstLayout = false
+        }
+    }
+    
+    func layoutToolbar() {
         var collectionTop: CGFloat = UIDevice.navigationBarHeight
         if let nav = navigationController {
             if nav.modalPresentationStyle == .fullScreen && UIDevice.isPortrait {
@@ -121,13 +141,6 @@ public class PhotoPickerViewController: PhotoBaseViewController {
                         collectionTop = UIDevice.navBarHeight
                     }
                 }
-            }
-        }
-        if pickerConfig.albumShowMode.isPop {
-            albumBackgroudView.frame = view.bounds
-            updateAlbumViewFrame()
-            if orientationDidChange {
-                titleView.updateFrame()
             }
         }
         if pickerConfig.isMultipleSelect {
@@ -167,13 +180,34 @@ public class PhotoPickerViewController: PhotoBaseViewController {
                 right: 0
             )
         }
-        if orientationDidChange {
-            orientationDidChange = false
+    }
+    
+    public override func viewWillAppear(_ animated: Bool) {
+        super.viewWillAppear(animated)
+        if isShowToolbar {
+            photoToolbar.viewWillAppear(self)
         }
-        if isFirstLayout {
-            listView.scrollTo(appropriatePlaceAsset)
-            appropriatePlaceAsset = nil
-            isFirstLayout = false
+    }
+    
+    public override func viewDidAppear(_ animated: Bool) {
+        super.viewDidAppear(animated)
+        if isShowToolbar {
+            photoToolbar.viewDidAppear(self)
+        }
+        weakController?.resetDelegate()
+    }
+    
+    public override func viewWillDisappear(_ animated: Bool) {
+        super.viewWillDisappear(animated)
+        if isShowToolbar {
+            photoToolbar.viewWillDisappear(self)
+        }
+    }
+    
+    public override func viewDidDisappear(_ animated: Bool) {
+        super.viewDidDisappear(animated)
+        if isShowToolbar {
+            photoToolbar.viewDidDisappear(self)
         }
     }
     
@@ -188,7 +222,11 @@ public class PhotoPickerViewController: PhotoBaseViewController {
 
 extension PhotoPickerViewController {
     
-    private func initView() {
+    func initView() {
+        if didInitViews {
+            return
+        }
+        didInitViews = true
         extendedLayoutIncludesOpaqueBars = true
         edgesForExtendedLayout = .all
         if #unavailable(iOS 11.0) {
@@ -267,6 +305,8 @@ extension PhotoPickerViewController {
         } else {
             vc = PhotoPickerFilterViewController(style: .grouped)
         }
+        vc.themeColor = config.filterThemeColor
+        vc.themeDarkColor = config.filterThemeDarkColor
         vc.selectOptions = pickerConfig.selectOptions
         #if HXPICKER_ENABLE_EDITOR
         vc.editorOptions = pickerConfig.editorOptions

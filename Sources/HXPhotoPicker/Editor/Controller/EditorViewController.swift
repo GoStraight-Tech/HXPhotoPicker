@@ -48,7 +48,7 @@ open class EditorViewController: BaseViewController {
         finishHandler = finish
         cancelHandler = cancel
         editedResult = asset.result
-        finishRatioIndex = config.cropSize.defaultSeletedIndex
+        finishRatioIndex = config.cropSize.isRoundCrop ? -1 : config.cropSize.defaultSeletedIndex
         super.init(nibName: nil, bundle: nil)
     }
     
@@ -72,7 +72,6 @@ open class EditorViewController: BaseViewController {
     var rightRotateButton: UIButton!
     var mirrorHorizontallyButton: UIButton!
     var mirrorVerticallyButton: UIButton!
-    var changeButton: UIButton!
     var maskListButton: UIButton!
     var scaleSwitchView: UIView!
     var scaleSwitchLeftBtn: UIButton!
@@ -192,7 +191,7 @@ open class EditorViewController: BaseViewController {
         
         ratioToolView = EditorRatioToolView(
             ratios: config.cropSize.aspectRatios,
-            selectedIndex: config.cropSize.defaultSeletedIndex
+            selectedIndex: config.cropSize.isRoundCrop ? -1 : config.cropSize.defaultSeletedIndex
         )
         ratioToolView.delegate = self
         ratioToolView.alpha = 0
@@ -214,35 +213,35 @@ open class EditorViewController: BaseViewController {
         toolsView.delegate = self
         
         cancelButton = UIButton(type: .custom)
-        cancelButton.setTitle("取消".localized, for: .normal)
+        cancelButton.setTitle(.textManager.editor.tools.cancelTitle.text, for: .normal)
         cancelButton.setTitleColor(config.cancelButtonTitleColor, for: .normal)
         cancelButton.setTitleColor(config.cancelButtonTitleColor.withAlphaComponent(0.5), for: .highlighted)
-        cancelButton.titleLabel?.font = UIFont.regularPingFang(ofSize: 17)
+        cancelButton.titleLabel?.font = .textManager.editor.tools.cancelTitleFont
         cancelButton.contentHorizontalAlignment = .left
         cancelButton.addTarget(self, action: #selector(didCancelButtonClick(button:)), for: .touchUpInside)
         
         finishButton = UIButton(type: .custom)
-        finishButton.setTitle("完成".localized, for: .normal)
+        finishButton.setTitle(.textManager.editor.tools.finishTitle.text, for: .normal)
         finishButton.setTitleColor(config.finishButtonTitleNormalColor, for: .normal)
         finishButton.setTitleColor(config.finishButtonTitleNormalColor.withAlphaComponent(0.5), for: .highlighted)
         finishButton.setTitleColor(config.finishButtonTitleDisableColor.withAlphaComponent(0.5), for: .disabled)
-        finishButton.titleLabel?.font = UIFont.regularPingFang(ofSize: 17)
+        finishButton.titleLabel?.font = .textManager.editor.tools.finishTitleFont
         finishButton.contentHorizontalAlignment = .right
         finishButton.addTarget(self, action: #selector(didFinishButtonClick(button:)), for: .touchUpInside)
         finishButton.isEnabled = !config.isWhetherFinishButtonDisabledInUneditedState
         
         resetButton = UIButton(type: .custom)
-        resetButton.setTitle("还原".localized, for: .normal)
+        resetButton.setTitle(.textManager.editor.tools.resetTitle.text, for: .normal)
         resetButton.setTitleColor(.white, for: .normal)
         resetButton.setTitleColor(.white.withAlphaComponent(0.5), for: .highlighted)
         resetButton.setTitleColor(.white.withAlphaComponent(0.5), for: .disabled)
-        resetButton.titleLabel?.font = UIFont.regularPingFang(ofSize: 17)
+        resetButton.titleLabel?.font = .textManager.editor.tools.resetTitleFont
         resetButton.addTarget(self, action: #selector(didResetButtonClick(button:)), for: .touchUpInside)
         resetButton.alpha = 0
         resetButton.isHidden = true
         
         leftRotateButton = ExpandButton(type: .system)
-        leftRotateButton.setImage("hx_editor_photo_rotate_left".image, for: .normal)
+        leftRotateButton.setImage(.imageResource.editor.crop.rotateLeft.image, for: .normal)
         if let btnSize = leftRotateButton.currentImage?.size {
             leftRotateButton.size = btnSize
         }
@@ -252,7 +251,7 @@ open class EditorViewController: BaseViewController {
         leftRotateButton.isHidden = true
         
         rightRotateButton = ExpandButton(type: .system)
-        rightRotateButton.setImage("hx_editor_photo_rotate_right".image, for: .normal)
+        rightRotateButton.setImage(.imageResource.editor.crop.rotateRight.image, for: .normal)
         if let btnSize = rightRotateButton.currentImage?.size {
             rightRotateButton.size = btnSize
         }
@@ -262,7 +261,7 @@ open class EditorViewController: BaseViewController {
         rightRotateButton.isHidden = true
         
         mirrorHorizontallyButton = ExpandButton(type: .system)
-        mirrorHorizontallyButton.setImage("hx_editor_photo_mirror_horizontally".image, for: .normal)
+        mirrorHorizontallyButton.setImage(.imageResource.editor.crop.mirrorHorizontally.image, for: .normal)
         if let btnSize = mirrorHorizontallyButton.currentImage?.size {
             mirrorHorizontallyButton.size = btnSize
         }
@@ -272,7 +271,7 @@ open class EditorViewController: BaseViewController {
         mirrorHorizontallyButton.isHidden = true
         
         mirrorVerticallyButton = ExpandButton(type: .system)
-        mirrorVerticallyButton.setImage("hx_editor_photo_mirror_vertically".image, for: .normal)
+        mirrorVerticallyButton.setImage(.imageResource.editor.crop.mirrorVertically.image, for: .normal)
         if let btnSize = mirrorVerticallyButton.currentImage?.size {
             mirrorVerticallyButton.size = btnSize
         }
@@ -281,20 +280,8 @@ open class EditorViewController: BaseViewController {
         mirrorVerticallyButton.alpha = 0
         mirrorVerticallyButton.isHidden = true
         
-        changeButton = ExpandButton(type: .custom)
-        changeButton.setImage("hx_editor_change_asset".image, for: .normal)
-        if let btnSize = changeButton.currentImage?.size {
-            changeButton.size = btnSize
-        }
-        changeButton.addTarget(self, action: #selector(didChangeButtonClick(button:)), for: .touchUpInside)
-        changeButton.layer.shadowColor = UIColor.black.withAlphaComponent(0.5).cgColor
-        changeButton.layer.shadowOpacity = 1
-        changeButton.layer.shadowRadius = 10
-        changeButton.alpha = 0
-        changeButton.isHidden = true
-        
         maskListButton = ExpandButton(type: .custom)
-        maskListButton.setImage("hx_editor_crop_mask_list".image, for: .normal)
+        maskListButton.setImage(.imageResource.editor.crop.maskList.image, for: .normal)
         if let btnSize = maskListButton.currentImage?.size {
             maskListButton.size = btnSize
         }
@@ -304,16 +291,16 @@ open class EditorViewController: BaseViewController {
         maskListButton.isHidden = true
         
         scaleSwitchLeftBtn = ExpandButton(type: .custom)
-        scaleSwitchLeftBtn.setImage("hx_editor_crop_scale_switch_left".image, for: .normal)
-        scaleSwitchLeftBtn.setImage("hx_editor_crop_scale_switch_left_selected".image, for: .selected)
+        scaleSwitchLeftBtn.setImage(.imageResource.editor.crop.ratioVerticalNormal.image, for: .normal)
+        scaleSwitchLeftBtn.setImage(.imageResource.editor.crop.ratioVerticalSelected.image, for: .selected)
         if let btnSize = scaleSwitchLeftBtn.currentImage?.size {
             scaleSwitchLeftBtn.size = btnSize
         }
         scaleSwitchLeftBtn.addTarget(self, action: #selector(didScaleSwitchLeftBtn(button:)), for: .touchUpInside)
         
         scaleSwitchRightBtn = ExpandButton(type: .custom)
-        scaleSwitchRightBtn.setImage("hx_editor_crop_scale_switch_right".image, for: .normal)
-        scaleSwitchRightBtn.setImage("hx_editor_crop_scale_switch_right_selected".image, for: .selected)
+        scaleSwitchRightBtn.setImage(.imageResource.editor.crop.ratioHorizontalNormal.image, for: .normal)
+        scaleSwitchRightBtn.setImage(.imageResource.editor.crop.ratioHorizontalSelected.image, for: .selected)
         if let btnSize = scaleSwitchRightBtn.currentImage?.size {
             scaleSwitchRightBtn.size = btnSize
         }
@@ -340,28 +327,28 @@ open class EditorViewController: BaseViewController {
             editorView.drawType = .canvas
             
             drawCancelButton = UIButton(type: .custom)
-            drawCancelButton.setTitle("取消".localized, for: .normal)
+            drawCancelButton.setTitle(.textManager.editor.brush.cancelTitle.text, for: .normal)
             drawCancelButton.setTitleColor(config.cancelButtonTitleColor, for: .normal)
             drawCancelButton.setTitleColor(config.cancelButtonTitleColor.withAlphaComponent(0.5), for: .highlighted)
-            drawCancelButton.titleLabel?.font = UIFont.regularPingFang(ofSize: 17)
+            drawCancelButton.titleLabel?.font = .textManager.editor.brush.cancelTitleFont
             drawCancelButton.contentHorizontalAlignment = .left
             drawCancelButton.alpha = 0
             drawCancelButton.isHidden = true
             drawCancelButton.addTarget(self, action: #selector(didCancelButtonClick(button:)), for: .touchUpInside)
             
             drawFinishButton = UIButton(type: .custom)
-            drawFinishButton.setTitle("完成".localized, for: .normal)
+            drawFinishButton.setTitle(.textManager.editor.brush.finishTitle.text, for: .normal)
             drawFinishButton.setTitleColor(config.finishButtonTitleNormalColor, for: .normal)
             drawFinishButton.setTitleColor(config.finishButtonTitleNormalColor.withAlphaComponent(0.5), for: .highlighted)
             drawFinishButton.setTitleColor(config.finishButtonTitleDisableColor.withAlphaComponent(0.5), for: .disabled)
-            drawFinishButton.titleLabel?.font = UIFont.regularPingFang(ofSize: 17)
+            drawFinishButton.titleLabel?.font = .textManager.editor.brush.finishTitleFont
             drawFinishButton.contentHorizontalAlignment = .right
             drawFinishButton.alpha = 0
             drawFinishButton.isHidden = true
             drawFinishButton.addTarget(self, action: #selector(didFinishButtonClick(button:)), for: .touchUpInside)
             
             drawUndoBtn = ExpandButton(type: .custom)
-            drawUndoBtn.setImage("hx_editor_canvas_draw_undo".image, for: .normal)
+            drawUndoBtn.setImage(.imageResource.editor.brush.canvasUndo.image, for: .normal)
             if let btnSize = drawUndoBtn.currentImage?.size {
                 drawUndoBtn.size = btnSize
             }
@@ -371,7 +358,7 @@ open class EditorViewController: BaseViewController {
             drawUndoBtn.addTarget(self, action: #selector(didDrawUndoBtn(button:)), for: .touchUpInside)
             
             drawUndoAllBtn = ExpandButton(type: .custom)
-            drawUndoAllBtn.setImage("hx_editor_canvas_draw_undo_all".image, for: .normal)
+            drawUndoAllBtn.setImage(.imageResource.editor.brush.canvasUndoAll.image, for: .normal)
             if let btnSize = drawUndoAllBtn.currentImage?.size {
                 drawUndoAllBtn.size = btnSize
             }
@@ -381,7 +368,7 @@ open class EditorViewController: BaseViewController {
             drawUndoAllBtn.addTarget(self, action: #selector(didDrawUndoAllBtn(button:)), for: .touchUpInside)
             
             drawRedoBtn = ExpandButton(type: .custom)
-            drawRedoBtn.setImage("hx_editor_canvas_draw_redo".image, for: .normal)
+            drawRedoBtn.setImage(.imageResource.editor.brush.canvasRedo.image, for: .normal)
             if let btnSize = drawRedoBtn.currentImage?.size {
                 drawRedoBtn.size = btnSize
             }
@@ -397,13 +384,17 @@ open class EditorViewController: BaseViewController {
             if UIDevice.isPortrait {
                 let top: CGFloat
                 let bottom: CGFloat
+                var bottomMargin = UIDevice.bottomMargin
+                if !self.isFullScreen, UIDevice.isPad {
+                    bottomMargin = 0
+                }
                 if self.config.buttonType == .bottom {
                     if self.isFullScreen {
                         top = UIDevice.isPad ? 50 : UIDevice.topMargin + 10
                     }else {
                         top = 30
                     }
-                    bottom = UIDevice.bottomMargin + 55 + 140
+                    bottom = bottomMargin + 55 + 140
                 }else {
                     let navHeight: CGFloat
                     if let barHeight = self.navigationController?.navigationBar.height {
@@ -427,9 +418,9 @@ open class EditorViewController: BaseViewController {
                         top = navHeight + 15
                     }
                     if UIDevice.isPad {
-                        bottom = UIDevice.bottomMargin + 160
+                        bottom = bottomMargin + 160
                     }else {
-                        bottom = UIDevice.bottomMargin + 140
+                        bottom = bottomMargin + 140
                     }
                 }
                 let left = UIDevice.isPad ? 30 : UIDevice.leftMargin + 15
@@ -529,8 +520,6 @@ open class EditorViewController: BaseViewController {
             view.addSubview(maskListButton)
         }
         
-        view.addSubview(changeButton)
-        
         view.addSubview(filterParameterView)
         
         view.addSubview(musicView)
@@ -569,7 +558,7 @@ open class EditorViewController: BaseViewController {
     var isPopTransition: Bool = false
     var isTransitionCompletion: Bool = true
     var loadAssetStatus: LoadAssetStatus = .loadding()
-    var assetLoadingView: ProgressHUD?
+    weak var assetLoadingView: ProgressHUD?
     
     var selectedOriginalImage: UIImage?
     var selectedThumbnailImage: UIImage?
@@ -739,8 +728,6 @@ open class EditorViewController: BaseViewController {
         brushSizeView.centerY = view.height * 0.5
         bottomMaskLayer.removeFromSuperlayer()
         
-        changeButton.centerX = view.width / 2
-        
         if UIDevice.isPortrait {
             layoutPortraitViews(buttonHeight)
         }else {
@@ -777,7 +764,6 @@ open class EditorViewController: BaseViewController {
     }
     
     func layoutPortraitViews(_ buttonHeight: CGFloat) {
-        changeButton.y = UIDevice.topMargin
         bottomMaskLayer = PhotoTools.getGradientShadowLayer(false)
         bottomMaskView.layer.addSublayer(bottomMaskLayer)
         if isToolsDisplay {
@@ -833,15 +819,18 @@ open class EditorViewController: BaseViewController {
         }
         
         if config.buttonType == .bottom {
-            cancelButton.y = view.height - UIDevice.bottomMargin - buttonHeight
+            var bottomMargin = UIDevice.bottomMargin
+            if !isFullScreen, UIDevice.isPad {
+                bottomMargin = 0
+            }
+            cancelButton.y = view.height - bottomMargin - buttonHeight
             finishButton.centerY = cancelButton.centerY
             resetButton.centerY = cancelButton.centerY
-            
             toolsView.frame = CGRect(
                 x: cancelButton.frame.maxX,
-                y: view.height - UIDevice.bottomMargin - buttonHeight,
+                y: view.height - bottomMargin - buttonHeight,
                 width: finishButton.x - cancelButton.frame.maxX,
-                height: buttonHeight + UIDevice.bottomMargin
+                height: buttonHeight + bottomMargin
             )
             if !config.cropSize.aspectRatios.isEmpty {
                 ratioToolView.frame = .init(x: 0, y: toolsView.y - 40, width: view.width, height: 40)
@@ -864,9 +853,13 @@ open class EditorViewController: BaseViewController {
                 ratioToolHeight = 40
             }
             #endif
+            var bottomMargin = UIDevice.bottomMargin
             if isFullScreen {
                 cancelButton.centerY = navY + navHeight / 2
             }else {
+                if UIDevice.isPad {
+                    bottomMargin = 0
+                }
                 cancelButton.centerY = navHeight / 2
             }
             finishButton.centerY = cancelButton.centerY
@@ -874,15 +867,15 @@ open class EditorViewController: BaseViewController {
              
             toolsView.frame = CGRect(
                 x: 0,
-                y: view.height - UIDevice.bottomMargin - toolsHeight,
+                y: view.height - bottomMargin - toolsHeight,
                 width: view.width,
-                height: toolsHeight + UIDevice.bottomMargin
+                height: toolsHeight + bottomMargin
             )
             let rotateBottom: CGFloat
             if #available(iOS 14.0, *), ProcessInfo.processInfo.isiOSAppOnMac {
-                rotateBottom = UIDevice.bottomMargin + 5
+                rotateBottom = bottomMargin + 5
             }else {
-                rotateBottom = UIDevice.isPad ? UIDevice.bottomMargin + 10 : UIDevice.bottomMargin
+                rotateBottom = UIDevice.isPad ? bottomMargin + 10 : bottomMargin
             }
             if !config.cropSize.aspectRatios.isEmpty {
                 ratioToolView.frame = .init(
@@ -1005,8 +998,6 @@ open class EditorViewController: BaseViewController {
         cancelButton.y = UIDevice.topMargin
         finishButton.centerY = cancelButton.centerY
         resetButton.centerY = cancelButton.centerY
-        changeButton.centerY = cancelButton.centerY
-        
         
         if #available(iOS 13.0, *) {
             drawCancelButton.y = UIDevice.topMargin
@@ -1038,7 +1029,7 @@ open class EditorViewController: BaseViewController {
         if !config.cropSize.aspectRatios.isEmpty {
             var ratioWidth: CGFloat = 50
             for ratio in ratioToolView.ratios {
-                let itemWidth = ratio.title.width(ofFont: .systemFont(ofSize: 14), maxHeight: .max) + 12
+                let itemWidth = ratio.title.text.width(ofFont: .systemFont(ofSize: 14), maxHeight: .max) + 12
                 if itemWidth > ratioWidth {
                     ratioWidth = itemWidth
                 }

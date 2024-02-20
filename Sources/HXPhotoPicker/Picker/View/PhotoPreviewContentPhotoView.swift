@@ -81,13 +81,10 @@ class PhotoPreviewContentPhotoView: UIView, PhotoPreviewContentViewProtocol {
     
     func requestThumbnail() {
         requestNetworkCompletion = true
-        requestID = photoAsset.requestThumbnailImage(
-            localType: .original,
-            targetWidth: AssetManager.thumbnailTargetWidth
-        ) { [weak self] in
+        requestID = photoAsset.requestThumImage { [weak self] in
             guard let self = self else { return }
             if let info = $2, info.isCancel { return }
-            if let image = $0, self.photoAsset == $1 {
+            if let image = $1, self.photoAsset == $0 {
                 self.imageView.image = image
             }
         }
@@ -109,7 +106,7 @@ class PhotoPreviewContentPhotoView: UIView, PhotoPreviewContentViewProtocol {
             canRequest = false
             UIApplication.shared.isNetworkActivityIndicatorVisible = true
             if loadingView == nil {
-                let text = "正在同步iCloud".localized + "(" + String(Int(photoAsset.downloadProgress * 100)) + "%)"
+                let text: String = .textPreview.iCloudSyncHudTitle.text + "(" + String(Int(photoAsset.downloadProgress * 100)) + "%)"
                 let toView = hudSuperview
                 loadingView = ProgressHUD.showLoading(
                     addedTo: toView,
@@ -373,6 +370,54 @@ extension PhotoPreviewContentPhotoView {
             return
         }
         #endif
+        if photoAsset.isGifAsset {
+            requestPreviewImageData()
+        }else {
+            requestID = photoAsset.requestICloudState { [weak self] asset, inICloud in
+                guard let self = self, self.photoAsset == asset else {
+                    return
+                }
+                if inICloud {
+                    self.requestPreviewImageData()
+                }else {
+                    self.requestPreviewImage()
+                }
+            }
+        }
+    }
+    
+    func requestPreviewImage() {
+        requestID = photoAsset.requestImage { [weak self] in
+            guard $0 == self?.photoAsset,
+                  $0.downloadStatus != .succeed else {
+                return
+            }
+            self?.showDonwloadICloudLoading($1)
+        } progressHandler: { [weak self] in
+            guard $0 == self?.photoAsset,
+                  $0.downloadStatus != .succeed else {
+                return
+            }
+            self?.updateProgress(progress: $1, isICloud: true)
+        } resultHandler: { [weak self] asset, image, info in
+            guard let self = self, self.photoAsset == asset else {
+                return
+            }
+            guard let image else {
+                self.requestFailed(info: info, isICloud: true)
+                return
+            }
+            if AssetManager.assetIsDegraded(for: info) {
+                return
+            }
+            self.requestSucceed()
+            self.imageView.setImage(image, animated: true)
+            self.requestID = nil
+            self.requestCompletion = true
+        }
+    }
+    
+    func requestPreviewImageData() {
         requestID = photoAsset.requestImageData { [weak self] in
             guard $0 == self?.photoAsset,
                   $0.downloadStatus != .succeed else {
@@ -394,7 +439,7 @@ extension PhotoPreviewContentPhotoView {
         UIApplication.shared.isNetworkActivityIndicatorVisible = true
         self.requestID = requestID
         loadAssetLocalIdentifier = photoAsset.phAsset?.localIdentifier
-        showLoadingView(text: "正在同步iCloud".localized)
+        showLoadingView(text: .textPreview.iCloudSyncHudTitle.text)
     }
     
     func updateProgress(progress: Double, isICloud: Bool) {
@@ -404,7 +449,7 @@ extension PhotoPreviewContentPhotoView {
         if loadingView.mode == .circleProgress {
             loadingView.progress = CGFloat(progress)
         }else {
-            let text = "正在同步iCloud".localized + "(" + String(Int(photoAsset.downloadProgress * 100)) + "%)"
+            let text: String = .textPreview.iCloudSyncHudTitle.text + "(" + String(Int(photoAsset.downloadProgress * 100)) + "%)"
             loadingView.text = text
         }
     }
@@ -484,7 +529,7 @@ extension PhotoPreviewContentPhotoView {
             delegate?.contentView(requestFailed: self)
             ProgressHUD.hide(forView: hudSuperview, animated: false)
             if showWarning {
-                let text = (info.inICloud && isICloud) ? "iCloud同步失败".localized : "下载失败".localized
+                let text: String = (info.inICloud && isICloud) ? .textPreview.iCloudSyncFailedHudTitle.text : .textPreview.downloadFailedHudTitle.text
                 ProgressHUD.showWarning(addedTo: hudSuperview, text: text.localized, animated: true, delayHide: 2)
             }
         }

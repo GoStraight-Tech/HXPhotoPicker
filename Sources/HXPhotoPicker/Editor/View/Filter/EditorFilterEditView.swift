@@ -23,46 +23,46 @@ class EditorFilterEditModel: Equatable {
         var title: String {
             switch self {
             case .brightness:
-                return "亮度".localized
+                return .textManager.editor.adjustment.brightnessTitle.text
             case .contrast:
-                return "对比度".localized
+                return .textManager.editor.adjustment.contrastTitle.text
             case .exposure:
-                return "曝光度".localized
+                return .textManager.editor.adjustment.exposureTitle.text
             case .saturation:
-                return "饱和度".localized
+                return .textManager.editor.adjustment.saturationTitle.text
             case .warmth:
-                return "色温".localized
+                return .textManager.editor.adjustment.warmthTitle.text
             case .vignette:
-                return "暗角".localized
+                return .textManager.editor.adjustment.vignetteTitle.text
             case .sharpen:
-                return "锐化".localized
+                return .textManager.editor.adjustment.sharpenTitle.text
             case .highlights:
-                return "高光".localized
+                return .textManager.editor.adjustment.highlightsTitle.text
             case .shadows:
-                return "阴影".localized
+                return .textManager.editor.adjustment.shadowsTitle.text
             }
         }
         
         var imageNamed: String {
             switch self {
             case .brightness:
-                return "hx_editor_filter_edit_brightness"
+                return .imageResource.editor.adjustment.brightness
             case .contrast:
-                return "hx_editor_filter_edit_contrast"
+                return .imageResource.editor.adjustment.contrast
             case .exposure:
-                return "hx_editor_filter_edit_exposure"
+                return .imageResource.editor.adjustment.exposure
             case .saturation:
-                return "hx_editor_filter_edit_saturation"
+                return .imageResource.editor.adjustment.saturation
             case .warmth:
-                return "hx_editor_filter_edit_warmth"
+                return .imageResource.editor.adjustment.warmth
             case .vignette:
-                return "hx_editor_filter_edit_vignette"
+                return .imageResource.editor.adjustment.vignette
             case .sharpen:
-                return "hx_editor_filter_edit_sharpen"
+                return .imageResource.editor.adjustment.sharpen
             case .highlights:
-                return "hx_editor_filter_edit_highlights"
+                return .imageResource.editor.adjustment.highlights
             case .shadows:
-                return "hx_editor_filter_edit_shadows"
+                return .imageResource.editor.adjustment.shadows
             }
         }
     }

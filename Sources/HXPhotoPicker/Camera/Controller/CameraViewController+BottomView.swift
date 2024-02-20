@@ -29,9 +29,11 @@ extension CameraViewController: CameraBottomViewDelegate {
     func capturePhotoCompletion(image: UIImage?) {
         if let image = image?.normalizedImage() {
             resetZoom()
-            if config.cameraType == .normal {
-                cameraManager.stopRunning()
+            cameraManager.stopRunning()
+            if config.cameraType == .metal {
                 previewView.resetMask(image)
+            }else {
+                normalPreviewView.resetMask(image)
             }
             bottomView.isGestureEnable = false
             saveCameraImage(image)
@@ -48,7 +50,7 @@ extension CameraViewController: CameraBottomViewDelegate {
             bottomView.isGestureEnable = true
             ProgressHUD.showWarning(
                 addedTo: self.view,
-                text: "拍摄失败!".localized,
+                text: .textManager.camera.captureFailedHudTitle.text,
                 animated: true,
                 delayHide: 1.5
             )
@@ -69,9 +71,11 @@ extension CameraViewController: CameraBottomViewDelegate {
         if error == nil, let videoURL = videoURL {
             resetZoom()
             let image = PhotoTools.getVideoThumbnailImage(videoURL: videoURL, atTime: 0.1)
-            if config.cameraType == .normal {
-                cameraManager.stopRunning()
+            cameraManager.stopRunning()
+            if config.cameraType == .metal {
                 previewView.resetMask(image)
+            }else {
+                normalPreviewView.resetMask(image)
             }
             bottomView.isGestureEnable = false
             saveCameraVideo(videoURL)
@@ -93,7 +97,7 @@ extension CameraViewController: CameraBottomViewDelegate {
                     arguments: [Int(config.videoMinimumDuration)]
                 )
             }else {
-                text = "拍摄失败!".localized
+                text = .textManager.camera.captureFailedHudTitle.text
             }
             ProgressHUD.showWarning(
                 addedTo: view,
@@ -107,15 +111,28 @@ extension CameraViewController: CameraBottomViewDelegate {
         cameraManager.stopRecording()
     }
     func bottomView(longPressDidBegan bottomView: CameraBottomView) {
-        currentZoomFacto = previewView.effectiveScale
+        if config.cameraType == .metal {
+            currentZoomFacto = previewView.effectiveScale
+        }else {
+            currentZoomFacto = normalPreviewView.effectiveScale
+        }
     }
     func bottomView(_ bottomView: CameraBottomView, longPressDidChanged scale: CGFloat) {
-        let remaining = previewView.maxScale - currentZoomFacto
+        let remaining: CGFloat
+        if config.cameraType == .metal {
+            remaining = previewView.maxScale - currentZoomFacto
+        }else {
+            remaining = normalPreviewView.maxScale - currentZoomFacto
+        }
         let zoomScale = currentZoomFacto + remaining * scale
         cameraManager.zoomFacto = zoomScale
     }
     func bottomView(longPressDidEnded bottomView: CameraBottomView) {
-        previewView.effectiveScale = cameraManager.zoomFacto
+        if config.cameraType == .metal {
+            previewView.effectiveScale = cameraManager.zoomFacto
+        }else {
+            normalPreviewView.effectiveScale = cameraManager.zoomFacto
+        }
     }
     func bottomView(didBackButton bottomView: CameraBottomView) {
         backClick(true)

@@ -80,9 +80,10 @@ class EditorFiltersView: UIView {
             addSubview(loaddingView)
             
             let operation = BlockOperation()
-            operation.addExecutionBlock { [unowned operation] in
+            operation.addExecutionBlock { [unowned operation, weak self] in
+                guard let self = self else { return }
                 if operation.isCancelled { return }
-                self.image = originalImage.scaleToFillSize(size: CGSize(width: 80, height: 80), equalRatio: true)
+                self.image = originalImage.scaleToFillSize(size: CGSize(width: 80, height: 80), mode: .center)
                 if operation.isCancelled { return }
                 DispatchQueue.main.async {
                     self.didLoad = true
@@ -97,9 +98,10 @@ class EditorFiltersView: UIView {
                 self.addSubview(self.loaddingView)
             }
             let operation = BlockOperation()
-            operation.addExecutionBlock { [unowned operation] in
+            operation.addExecutionBlock { [unowned operation, weak self] in
+                guard let self = self else { return }
                 if operation.isCancelled { return }
-                self.image = originalImage.scaleToFillSize(size: CGSize(width: 80, height: 80), equalRatio: true)
+                self.image = originalImage.scaleToFillSize(size: CGSize(width: 80, height: 80))
                 if operation.isCancelled { return }
                 DispatchQueue.main.async {
                     self.didLoad = true
@@ -120,7 +122,7 @@ class EditorFiltersView: UIView {
         let filterInfos = filterConfig.infos
         filters = []
         let originalFilter = PhotoEditorFilter(
-            filterName: isVideo ? "原片".localized : "原图".localized
+            filterName: isVideo ? .textManager.editor.filter.originalVideoTitle.text : .textManager.editor.filter.originalPhotoTitle.text
         )
         originalFilter.isOriginal = true
         if selectedIndex == 0 {
@@ -348,19 +350,19 @@ class EditorFiltersViewCell: UICollectionViewCell {
         selectedView.layer.cornerRadius = 4
         contentView.addSubview(selectedView)
         editButton = UIButton(type: .custom)
-        editButton.setImage("hx_editor_tools_filter_edit".image, for: .normal)
+        editButton.setImage(.imageResource.editor.filter.edit.image, for: .normal)
         editButton.addTarget(self, action: #selector(didEditButtonClick), for: .touchUpInside)
         contentView.addSubview(editButton)
         filterNameLb = UILabel()
         filterNameLb.textColor = .white
-        filterNameLb.font = .regularPingFang(ofSize: 13)
+        filterNameLb.font = .textManager.editor.filter.nameFont
         filterNameLb.textAlignment = .center
         filterNameLb.adjustsFontSizeToFitWidth = true
         contentView.addSubview(filterNameLb)
         parameterLb = UILabel()
         parameterLb.text = "0"
         parameterLb.textColor = .white
-        parameterLb.font = .regularPingFang(ofSize: 11)
+        parameterLb.font = .textManager.editor.filter.parameterFont
         parameterLb.textAlignment = .center
         parameterLb.isHidden = true
         contentView.addSubview(parameterLb)

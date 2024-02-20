@@ -25,15 +25,17 @@ public struct PreviewViewConfiguration {
     /// 暗黑风格下背景颜色
     public var backgroundDarkColor: UIColor = .black
     
+    /// 当状态栏/导航栏隐藏时背景颜色
+    public var statusBarHiddenBgColor: UIColor = .black
+    
     /// 选择框配置
     public var selectBox: SelectBoxConfiguration = .init()
     
     /// 多选模式下，未选择资源时是否禁用完成按钮
     /// false：默认选择当前预览的资源
-    public var disableFinishButtonWhenNotSelected: Bool = false {
-        didSet {
-            bottomView.disableFinishButtonWhenNotSelected = disableFinishButtonWhenNotSelected
-        }
+    public var disableFinishButtonWhenNotSelected: Bool {
+        get { bottomView.disableFinishButtonWhenNotSelected }
+        set { bottomView.disableFinishButtonWhenNotSelected = newValue }
     }
     
     /// 视频播放类型
@@ -65,16 +67,27 @@ public struct PreviewViewConfiguration {
     public var cancelPosition: PhotoPickerViewController.CancelPosition = .right
     
     /// 取消按钮图片名
-    public var cancelImageName: String = "hx_picker_photolist_cancel"
+    public var cancelImageName: String {
+        get { .imageResource.picker.preview.cancel }
+        set { HX.imageResource.picker.preview.cancel = newValue }
+    }
     
     /// 暗黑模式下取消按钮图片名
-    public var cancelDarkImageName: String = "hx_picker_photolist_cancel"
+    public var cancelDarkImageName: String {
+        get { .imageResource.picker.preview.cancelDark }
+        set { HX.imageResource.picker.preview.cancelDark = newValue }
+    }
     
     public init() {
         PhotoManager.shared.loadNetworkVideoMode = loadNetworkVideoMode
         var bottomConfig = PickerBottomViewConfiguration()
         bottomConfig.disableFinishButtonWhenNotSelected = false
         self.bottomView = bottomConfig
+    }
+    
+    public mutating func setThemeColor(_ color: UIColor) {
+        selectBox.setThemeColor(color)
+        bottomView.setThemeColor(color)
     }
 }
 

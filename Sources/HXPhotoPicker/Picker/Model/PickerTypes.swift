@@ -344,3 +344,5 @@ public enum PhotoPreviewType {
     case picker
     case browser
 }
+
+

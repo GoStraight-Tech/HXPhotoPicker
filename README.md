@@ -102,7 +102,7 @@
 
 ```swift
 dependencies: [
-    .package(url: "https://github.com/SilenceLove/HXPhotoPicker.git", .upToNextMajor(from: "4.1.1"))
+    .package(url: "https://github.com/SilenceLove/HXPhotoPicker.git", .upToNextMajor(from: "4.1.6"))
 ]
 ```
 
@@ -167,10 +167,16 @@ class ViewController: UIViewController {
         let config = PickerConfiguration.default
         
         // 方法一：async/await
+        // 使用`Photo`
         let images: [UIImage] = try await Photo.picker(config)
         let urls: [URL] = try await Photo.picker(config)
         let urlResult: [AssetURLResult] = try await Photo.picker(config)
         let assetResult: [AssetResult] = try await Photo.picker(config)
+        // 使用`PhotoPickerController`
+        let images: [UIImage] = try await PhotoPickerController.picker(config)
+        let urls: [URL] = try await PhotoPickerController.picker(config)
+        let urlResult: [AssetURLResult] = try await PhotoPickerController.picker(config)
+        let assetResult: [AssetResult] = try await PhotoPickerController.picker(config)
         
         let pickerResult = try await Photo.picker(config)
         let images: [UIImage] = try await pickerResult.objects()
@@ -250,6 +256,11 @@ extension ViewController: PhotoPickerControllerDelegate {
 // compression: 压缩参数，不传则不压缩 
 let image: UIImage = try await photoAsset.object(compression)
 
+/// 获取指定`Size`的`UIImage`
+/// targetSize: 指定imageSize
+/// targetMode: 裁剪模式
+let image = try await photoAsset.image(targetSize: .init(width: 200, height: 200), targetMode: .fill)
+
 // compressionQuality: 压缩参数，不传则不压缩 
 photoAsset.getImage(compressionQuality: compressionQuality) { image in
     print(image)
@@ -296,6 +307,24 @@ photoAsset.getURL(compression: compression) { result in
 }
 ```
 
+#### 获取其他
+
+```swift
+/// 获取缩略图
+let thumImage = try await photoAsset.requesthumbnailImage()
+
+/// 获取预览图
+let previewImage = try await photoAsset.requestPreviewImage()
+
+/// 获取 AVAsset
+let avAsset = try await photoAsset.requestAVAsset()
+
+/// 获取 AVPlayerItem
+let playerItem = try await photoAsset.requestPlayerItem()
+
+/// 获取 PHLivePhoto
+let livePhoto = try await photoAsset.requestLivePhoto()
+```
 
 ## <a id="更新记录"></a> 更新日志
 
@@ -304,7 +333,7 @@ photoAsset.getURL(compression: compression) { result in
   
 | 版本 | 发布时间 | Xcode | Swift | iOS |
 | ---- | ----  | ---- | ---- | ---- |
-| [v4.1.1](https://github.com/SilenceLove/HXPhotoPicker/blob/master/Documentation/RELEASE_NOTE_CN.md#411) | 2023-11-14 | 15.0.0 | 5.9.0 | 12.0+ | 
+| [v4.1.6](https://github.com/SilenceLove/HXPhotoPicker/blob/master/Documentation/RELEASE_NOTE_CN.md#416) | 2024-02-16 | 15.0.0 | 5.9.0 | 12.0+ | 
 
 </details>
 
@@ -313,6 +342,11 @@ photoAsset.getURL(compression: compression) { result in
   
 | 版本 | 发布时间 | Xcode | Swift | iOS |
 | ---- | ----  | ---- | ---- | ---- |
+| [v4.1.5](https://github.com/SilenceLove/HXPhotoPicker/blob/master/Documentation/RELEASE_NOTE_CN.md#415) | 2024-01-10 | 15.0.0 | 5.9.0 | 12.0+ | 
+| [v4.1.4](https://github.com/SilenceLove/HXPhotoPicker/blob/master/Documentation/RELEASE_NOTE_CN.md#414) | 2023-12-24 | 15.0.0 | 5.9.0 | 12.0+ | 
+| [v4.1.3](https://github.com/SilenceLove/HXPhotoPicker/blob/master/Documentation/RELEASE_NOTE_CN.md#413) | 2023-12-16 | 15.0.0 | 5.9.0 | 12.0+ | 
+| [v4.1.2](https://github.com/SilenceLove/HXPhotoPicker/blob/master/Documentation/RELEASE_NOTE_CN.md#412) | 2023-12-02 | 15.0.0 | 5.9.0 | 12.0+ | 
+| [v4.1.1](https://github.com/SilenceLove/HXPhotoPicker/blob/master/Documentation/RELEASE_NOTE_CN.md#411) | 2023-11-14 | 15.0.0 | 5.9.0 | 12.0+ | 
 | [v4.1.0](https://github.com/SilenceLove/HXPhotoPicker/blob/master/Documentation/RELEASE_NOTE_CN.md#410) | 2023-11-07 | 15.0.0 | 5.9.0 | 12.0+ | 
 | [v4.0.9](https://github.com/SilenceLove/HXPhotoPicker/blob/master/Documentation/RELEASE_NOTE_CN.md#409) | 2023-10-22 | 15.0.0 | 5.9.0 | 12.0+ |
 | [v4.0.8](https://github.com/SilenceLove/HXPhotoPicker/blob/master/Documentation/RELEASE_NOTE_CN.md#408) | 2023-10-13 | 15.0.0 | 5.9.0 | 12.0+ |

@@ -22,15 +22,17 @@ extension PhotoPreviewViewController: PhotoToolBarDelegate {
             type: previewType != .browser ? .preview : .browser
         )
         photoToolbar.toolbarDelegate = self
-        
-        if config.isShowBottomView {
-            view.addSubview(photoToolbar)
-            if previewType != .browser {
-                photoToolbar.updateOriginalState(pickerController.isOriginal)
-                photoToolbar.requestOriginalAssetBtyes()
-                let selectedAssetArray = pickerController.selectedAssetArray
-                photoToolbar.updateSelectedAssets(selectedAssetArray)
-                photoToolbar.selectedAssetDidChanged(selectedAssetArray)
+        view.addSubview(photoToolbar)
+        if previewType != .browser {
+            photoToolbar.updateOriginalState(pickerController.isOriginal)
+            photoToolbar.requestOriginalAssetBtyes()
+            let selectedAssetArray = pickerController.selectedAssetArray
+            photoToolbar.updateSelectedAssets(selectedAssetArray)
+            photoToolbar.selectedAssetDidChanged(selectedAssetArray)
+            photoToolbar.configPreviewList(previewAssets, page: currentPreviewIndex)
+        }else {
+            if config.bottomView.isShowPreviewList {
+                photoToolbar.configPreviewList(previewAssets, page: currentPreviewIndex)
             }else {
                 photoToolbar.updateSelectedAssets(previewAssets)
             }
@@ -91,6 +93,10 @@ extension PhotoPreviewViewController: PhotoToolBarDelegate {
             }
         }
         delegate?.previewViewController(movePhotoAsset: self)
+    }
+    
+    public func photoToolbar(_ toolbar: PhotoToolBar, previewMoveTo asset: PhotoAsset) {
+        scrollToPhotoAsset(asset)
     }
     
     func openEditor(_ photoAsset: PhotoAsset) {
@@ -246,7 +252,7 @@ extension PhotoPreviewViewController: PhotoToolBarDelegate {
         if assetCount == 0 {
             ProgressHUD.showWarning(
                 addedTo: view,
-                text: "没有可选资源".localized,
+                text: .textPreview.emptyAssetHudTitle.text,
                 animated: true,
                 delayHide: 1.5
             )
@@ -344,19 +350,16 @@ extension PhotoPreviewViewController: PhotoToolBarDelegate {
     
     func startRequestPreviewTimer() {
         requestPreviewTimer?.invalidate()
-        requestPreviewTimer = Timer(
+        requestPreviewTimer = Timer.scheduledTimer(
             timeInterval: 0.2,
             target: self,
             selector: #selector(delayRequestPreview),
             userInfo: nil,
             repeats: false
         )
-        RunLoop.main.add(
-            requestPreviewTimer!,
-            forMode: RunLoop.Mode.common
-        )
     }
-    @objc func delayRequestPreview() {
+    @objc
+    func delayRequestPreview() {
         if let cell = getCell(for: currentPreviewIndex) {
             cell.requestPreviewAsset()
             requestPreviewTimer = nil

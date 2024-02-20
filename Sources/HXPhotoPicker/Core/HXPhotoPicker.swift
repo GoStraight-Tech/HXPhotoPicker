@@ -16,6 +16,7 @@ public enum Photo {
     #if HXPICKER_ENABLE_PICKER
     
     @available(iOS 13.0, *)
+    @MainActor
     public static func picker<T: PhotoAssetObject>(
         _ config: PickerConfiguration,
         selectedAssets: [PhotoAsset] = [],
@@ -35,6 +36,7 @@ public enum Photo {
     }
     
     @available(iOS 13.0, *)
+    @MainActor
     public static func picker(
         _ config: PickerConfiguration,
         selectedAssets: [PhotoAsset] = [],
@@ -83,6 +85,7 @@ public enum Photo {
     
     @available(iOS 13.0, *)
     @discardableResult
+    @MainActor
     public static func edit(
         _ asset: EditorAsset,
         config: EditorConfiguration = .init(),
@@ -123,6 +126,7 @@ public enum Photo {
     #if HXPICKER_ENABLE_CAMERA && !targetEnvironment(macCatalyst)
     
     @available(iOS 13.0, *)
+    @MainActor
     public static func capture(
         _ config: CameraConfiguration = .init(),
         type: CameraController.CaptureType = .all,
@@ -150,6 +154,83 @@ public enum Photo {
     
 }
 #endif
+
+public enum HX {
+    
+    #if HXPICKER_ENABLE_PICKER
+    @available(iOS 13.0, *)
+    @MainActor
+    public static func picker<T: PhotoAssetObject>(
+        _ config: PickerConfiguration,
+        selectedAssets: [PhotoAsset] = [],
+        delegate: PhotoPickerControllerDelegate? = nil,
+        compression: PhotoAsset.Compression? = nil,
+        fromVC: UIViewController? = nil,
+        toFile fileConfig: PickerResult.FileConfigHandler? = nil
+    ) async throws -> [T] {
+        try await Photo.picker(
+            config,
+            selectedAssets: selectedAssets,
+            delegate: delegate,
+            compression: compression,
+            fromVC: fromVC,
+            toFile: fileConfig
+        )
+    }
+    
+    @available(iOS 13.0, *)
+    @MainActor
+    public static func picker(
+        _ config: PickerConfiguration,
+        selectedAssets: [PhotoAsset] = [],
+        delegate: PhotoPickerControllerDelegate? = nil,
+        fromVC: UIViewController? = nil
+    ) async throws -> PickerResult {
+        try await Photo.picker(
+            config,
+            selectedAssets: selectedAssets,
+            delegate: delegate,
+            fromVC: fromVC
+        )
+    }
+    #endif
+    
+    #if HXPICKER_ENABLE_EDITOR
+    @available(iOS 13.0, *)
+    @discardableResult
+    @MainActor
+    public static func edit(
+        _ asset: EditorAsset,
+        config: EditorConfiguration = .init(),
+        delegate: EditorViewControllerDelegate? = nil,
+        fromVC: UIViewController? = nil
+    ) async throws -> EditorAsset {
+        try await Photo.edit(asset, config: config, delegate: delegate, fromVC: fromVC)
+    }
+    #endif
+    
+    #if HXPICKER_ENABLE_CAMERA
+    @available(iOS 13.0, *)
+    @MainActor
+    public static func capture(
+        _ config: CameraConfiguration = .init(),
+        type: CameraController.CaptureType = .all,
+        delegate: CameraControllerDelegate? = nil,
+        fromVC: UIViewController? = nil
+    ) async throws -> CameraController.CaptureResult {
+        try await Photo.capture(config, type: type, delegate: delegate, fromVC: fromVC)
+    }
+    #endif
+    
+    public enum ImageTargetMode {
+        /// 与原图宽高比一致，高度会根据`targetSize`计算
+        case fill
+        /// 根据`targetSize`拉伸/缩放
+        case fit
+        /// 如果`targetSize`的比例与原图不一样则居中显示
+        case center
+    }
+}
 
 public struct HXPickerWrapper<Base> {
     public let base: Base

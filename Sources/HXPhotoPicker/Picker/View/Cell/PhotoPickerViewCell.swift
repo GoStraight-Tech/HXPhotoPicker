@@ -72,11 +72,11 @@ open class PhotoPickerViewCell: PhotoPickerBaseViewCell {
         assetTypeLb.textAlignment = .right
         contentView.addSubview(assetTypeLb)
         
-        assetTypeIcon = UIImageView(image: UIImage.image(for: "hx_picker_cell_video_icon"))
+        assetTypeIcon = UIImageView(image: .imageResource.picker.photoList.cell.video.image)
         assetTypeIcon.isHidden = true
         contentView.addSubview(assetTypeIcon)
         
-        assetEditMarkIcon = UIImageView(image: UIImage.image(for: "hx_picker_cell_photo_edit_icon"))
+        assetEditMarkIcon = UIImageView(image: .imageResource.picker.photoList.cell.photoEdited.image)
         assetEditMarkIcon.isHidden = true
         contentView.addSubview(assetEditMarkIcon)
         
@@ -85,7 +85,7 @@ open class PhotoPickerViewCell: PhotoPickerBaseViewCell {
         disableMaskLayer.isHidden = true
         contentView.layer.addSublayer(disableMaskLayer)
         
-        iCloudMarkView = UIImageView(image: "hx_picker_photo_icloud_mark".image)
+        iCloudMarkView = UIImageView(image: .imageResource.picker.photoList.cell.iCloud.image)
         if let imageSize = iCloudMarkView.image?.size {
             iCloudMarkView.size = imageSize
         }
@@ -102,8 +102,9 @@ open class PhotoPickerViewCell: PhotoPickerBaseViewCell {
         self.inICloud = inICloud
         iCloudMarkView.isHidden = !inICloud
         setupDisableMask()
-        if inICloud,
-           photoAsset.downloadStatus == .canceled {
+        if inICloud &&
+            (photoAsset.downloadStatus == .downloading ||
+             photoAsset.downloadStatus == .canceled) {
             syncICloud()
         }else {
             loaddingView.isHidden = true
@@ -118,6 +119,9 @@ open class PhotoPickerViewCell: PhotoPickerBaseViewCell {
     
     /// 设置禁用遮罩
     open func setupDisableMask() {
+        if photoAsset.downloadStatus == .downloading {
+            return
+        }
         if inICloud {
             disableMaskLayer.isHidden = false
             return
@@ -289,7 +293,7 @@ extension PhotoPickerViewCell {
             return
         }
         if photoAsset.isGifAsset {
-            assetTypeLb.text = "GIF"
+            assetTypeLb.text = .textPhotoList.cell.gifTitle.text
             assetTypeMaskView.isHidden = false
         }else if photoAsset.mediaSubType.isVideo {
             if let videoTime = photoAsset.videoTime {
@@ -309,14 +313,14 @@ extension PhotoPickerViewCell {
             assetTypeMaskView.isHidden = false
 //            #if HXPICKER_ENABLE_EDITOR
 //            if photoAsset.videoEditedResult == nil {
-//                assetTypeIcon.image = UIImage.image(for: "hx_picker_cell_video_icon")
+//                assetTypeIcon.image = .imageResource.picker.photoList.cell.video.image
 //            }else {
-//                assetTypeIcon.image = UIImage.image(for: "hx_picker_cell_video_edit_icon")
+//                assetTypeIcon.image = .imageResource.picker.photoList.cell.videoEdited.image
 //            }
 //            #endif
         }else if photoAsset.mediaSubType == .livePhoto ||
                     photoAsset.mediaSubType == .localLivePhoto {
-            assetTypeLb.text = "Live"
+            assetTypeLb.text = .textPhotoList.cell.LivePhotoTitle.text
             assetTypeMaskView.isHidden = false
         }else {
             assetTypeLb.text = nil
@@ -328,7 +332,7 @@ extension PhotoPickerViewCell {
             if let editedResult = photoAsset.editedResult {
                 switch editedResult {
                 case .image(let result, _):
-                    assetTypeLb.text = result.imageType == .gif ? "GIF" : nil
+                    assetTypeLb.text = result.imageType == .gif ? .textPhotoList.cell.gifTitle.text : nil
                     assetTypeMaskView.isHidden = false
                     assetEditMarkIcon.isHidden = false
                 default:

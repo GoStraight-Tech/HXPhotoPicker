@@ -81,7 +81,7 @@ open class PhotoFetchData {
                 }
             }else {
                 cameraAssetCollection = PhotoAssetCollection(
-                    albumName: self.config.emptyAlbumName,
+                    albumName: .textManager.picker.albumList.emptyAlbumName.text,
                     coverImage: self.config.emptyCoverImageName.image
                 )
             }
@@ -96,22 +96,24 @@ open class PhotoFetchData {
     /// 获取相册集合
     public func fetchAssetCollections() {
         cancelAssetCollectionsQueue()
+        let localAssets = pickerData.localAssets
+        let localCameraAssets = pickerData.localCameraAssets
         let operation = BlockOperation()
-        operation.addExecutionBlock { [unowned operation] in
-            self.assetCollections = []
-            var localCount = self.pickerData.localAssets.count + self.pickerData.localCameraAssets.count
-            var coverImage = self.pickerData.localCameraAssets.first?.originalImage
+        operation.addExecutionBlock { [unowned operation, weak self] in
+            guard let self = self else { return }
+            var localCount = localAssets.count + localCameraAssets.count
+            var coverImage = localCameraAssets.first?.originalImage
             if coverImage == nil {
-                coverImage = self.pickerData.localAssets.first?.originalImage
+                coverImage = localAssets.first?.originalImage
             }
             var firstSetImage = true
             for photoAsset in self.pickerData.selectedAssets where photoAsset.phAsset == nil {
                 if operation.isCancelled { return }
-                let inLocal = self.pickerData.localAssets.contains(
+                let inLocal = localAssets.contains(
                     where: {
                     $0.isEqual(photoAsset)
                 })
-                let inLocalCamera = self.pickerData.localCameraAssets.contains(
+                let inLocalCamera = localCameraAssets.contains(
                     where: {
                         $0.isEqual(photoAsset)
                     }
@@ -140,6 +142,7 @@ open class PhotoFetchData {
                 }
                 return true
             }
+            self.assetCollections = []
             if var collection = assetCollections.first {
                 if let cameraAssetCollection = self.cameraAssetCollection {
                     collection = cameraAssetCollection
@@ -174,11 +177,14 @@ open class PhotoFetchData {
         completion: @escaping (PhotoFetchAssetResult) -> Void
     ) {
         cancelFetchAssetsQueue()
+        let localAssets = pickerData.localAssets
+        let localCameraAssets = pickerData.localCameraAssets
         let operation = BlockOperation()
-        operation.addExecutionBlock { [unowned operation] in
+        operation.addExecutionBlock { [unowned operation, weak self] in
             if operation.isCancelled { return }
-            self.pickerData.localAssets.forEach { $0.isSelected = false }
-            self.pickerData.localCameraAssets.forEach { $0.isSelected = false }
+            guard let self = self else { return}
+            localAssets.forEach { $0.isSelected = false }
+            localCameraAssets.forEach { $0.isSelected = false }
             let result = self.config.fetchAsset.fetchPhotoAssets(
                 self.config,
                 pickerData: self.pickerData,

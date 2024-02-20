@@ -15,21 +15,26 @@ public extension PhotoAsset {
         _ completion: ((PHAsset?) -> Void)? = nil
     ) {
         if mediaSubType == .localLivePhoto {
-            requestLocalLivePhoto { imageURL, videoURL in
-                guard let imageURL = imageURL, let videoURL = videoURL else {
-                    completion?(nil)
-                    return
-                }
-                AssetManager.save(
-                    type: .livePhoto(imageURL: imageURL, videoURL: videoURL),
-                    customAlbumName: albumName
-                ) {
-                    switch $0 {
-                    case .success(let phAsset):
-                        completion?(phAsset)
-                    case .failure:
+            requestLocalLivePhotoURL {
+                switch $0 {
+                case .success(let result):
+                    guard let livePhoto = result.livePhoto else {
                         completion?(nil)
+                        return
                     }
+                    AssetManager.save(
+                        type: .livePhoto(imageURL: livePhoto.imageURL, videoURL: livePhoto.videoURL),
+                        customAlbumName: albumName
+                    ) {
+                        switch $0 {
+                        case .success(let phAsset):
+                            completion?(phAsset)
+                        case .failure:
+                            completion?(nil)
+                        }
+                    }
+                default:
+                    completion?(nil)
                 }
             }
             return
@@ -225,7 +230,7 @@ public extension PhotoAsset {
         syncICloud { _, _ in
             loadingView = ProgressHUD.showProgress(
                 addedTo: view,
-                text: "正在同步iCloud".localized + "...",
+                text: .textPhotoList.iCloudSyncHudTitle.text + "...",
                 animated: true
             )
         } progressHandler: { _, progress in
@@ -235,7 +240,7 @@ public extension PhotoAsset {
             if !isSuccess {
                 ProgressHUD.showWarning(
                     addedTo: view,
-                    text: "iCloud同步失败".localized,
+                    text: .textPhotoList.iCloudSyncFailedHudTitle.text,
                     animated: true,
                     delayHide: 1.5
                 )

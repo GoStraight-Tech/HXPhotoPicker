@@ -24,6 +24,30 @@ extension String: HXPickerCompatibleValue {
     
     var image: UIImage? { UIImage.image(for: self) }
     
+    static var imageResource: HX.ImageResource {
+        .shared
+    }
+    
+    static var textManager: HX.TextManager {
+        .shared
+    }
+    
+    #if HXPICKER_ENABLE_PICKER || HXPICKER_ENABLE_CAMERA
+    static var textNotAuthorized: HX.TextManager.Picker.NotAuthorized {
+        textManager.picker.notAuthorized
+    }
+    #endif
+    
+    #if HXPICKER_ENABLE_PICKER
+    static var textPhotoList: HX.TextManager.Picker.PhotoList {
+        textManager.picker.photoList
+    }
+    
+    static var textPreview: HX.TextManager.Picker.Preview {
+        textManager.picker.preview
+    }
+    #endif
+    
     var lrc: String? {
         var lrcString: String?
         if let bundle = PhotoManager.shared.bundle,
