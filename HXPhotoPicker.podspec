@@ -1,6 +1,6 @@
 Pod::Spec.new do |spec|
     spec.name               = "HXPhotoPicker"
-    spec.version            = "4.1.6"
+    spec.version            = "4.2.0.2"
     spec.summary            = "照片/视频选择器 - 支持LivePhoto、GIF图片选择、自定义编辑照片/视频、3DTouch预览、浏览网络图片/网络视频 功能 - Imitation weibo photo/image picker - support for LivePhoto, GIF image selection, 3DTouch preview, browse the web image function"
     spec.homepage           = "https://github.com/SilenceLove/HXPhotoPicker"
     spec.license            = { :type => "MIT", :file => "LICENSE" }
@@ -17,7 +17,12 @@ Pod::Spec.new do |spec|
     
     spec.subspec 'Core' do |core|
         core.source_files   = "Sources/HXPhotoPicker/Core/**/*.{swift}"
-        core.resources      = "Sources/HXPhotoPicker/Resources/*.{bundle}"
+        core.dependency 'HXPhotoPicker/Resources'
+    end
+    
+    spec.subspec 'Resources' do |resources|
+        resources.resources          = "Sources/HXPhotoPicker/Resources/*.{bundle}"
+        resources.resource_bundle    = { 'HXPhotoPicker_Privacy' => ['Sources/HXPhotoPicker/Resources/PrivacyInfo.xcprivacy']}
     end
     
     spec.subspec 'Picker' do |picker|
@@ -81,7 +86,6 @@ Pod::Spec.new do |spec|
         noLocation.dependency 'HXPhotoPicker/Editor'
         noLocation.dependency 'HXPhotoPicker/Camera/Lite'
     end
-    
     
     spec.subspec 'Full' do |full|
         full.dependency 'HXPhotoPicker/Picker'

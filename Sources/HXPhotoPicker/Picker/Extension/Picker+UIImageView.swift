@@ -14,6 +14,7 @@ import Kingfisher
 extension UIImageView {
     
     #if canImport(Kingfisher)
+    typealias ImageCompletion = (UIImage?, KingfisherError?, PhotoAsset) -> Void
     // swiftlint:disable function_body_length
     @discardableResult
     func setImage(
@@ -48,12 +49,14 @@ extension UIImageView {
         var loadVideoCover: Bool = false
         var cacheKey: String?
         if let imageAsset = asset.networkImageAsset {
-            let originalCacheKey = imageAsset.originalCacheKey ?? imageAsset.originalURL.cacheKey
+            let originalCacheKey = imageAsset.originalCacheKey ?? imageAsset.originalURL?.cacheKey
             if isThumbnail {
                 if imageAsset.thumbnailLoadMode == .varied,
+                   let originalCacheKey,
                    ImageCache.default.isCached(forKey: originalCacheKey) {
-                    let thumbnailCacheKey = imageAsset.thumbailCacheKey ?? imageAsset.thumbnailURL.cacheKey
-                    if ImageCache.default.isCached(forKey: thumbnailCacheKey) {
+                    let thumbnailCacheKey = imageAsset.thumbailCacheKey ?? imageAsset.thumbnailURL?.cacheKey
+                    if let thumbnailCacheKey,
+                       ImageCache.default.isCached(forKey: thumbnailCacheKey) {
                         placeholderImage = ImageCache.default.retrieveImageInMemoryCache(
                             forKey: thumbnailCacheKey,
                             options: []
@@ -87,7 +90,8 @@ extension UIImageView {
             }else {
                 if imageAsset.originalLoadMode == .alwaysThumbnail,
                    !forciblyOriginal {
-                    if ImageCache.default.isCached(forKey: originalCacheKey) {
+                    if let originalCacheKey,
+                       ImageCache.default.isCached(forKey: originalCacheKey) {
                         url = imageAsset.originalURL
                         cacheKey = imageAsset.originalCacheKey
                     }else {
@@ -112,9 +116,9 @@ extension UIImageView {
                 options = [.transition(.fade(0.2))]
                 placeholderImage = UIImage.image(for: videoAsset.coverPlaceholder)
             }else {
-                let key = videoAsset.videoURL.absoluteString
-                var videoURL: URL
-                if PhotoTools.isCached(forVideo: key) {
+                var videoURL: URL?
+                if let key = videoAsset.videoURL?.absoluteString,
+                   PhotoTools.isCached(forVideo: key) {
                     videoURL = PhotoTools.getVideoCacheURL(for: key)
                 }else {
                     videoURL = videoAsset.videoURL
@@ -266,8 +270,8 @@ extension UIImageView {
                 completionHandler?(coverImage, asset)
                 return nil
             }else {
-                let key = videoAsset.videoURL.absoluteString
-                if PhotoTools.isCached(forVideo: key) {
+                if let key = videoAsset.videoURL?.absoluteString,
+                   PhotoTools.isCached(forVideo: key) {
                     videoURL = PhotoTools.getVideoCacheURL(for: key)
                 }else {
                     videoURL = videoAsset.videoURL
@@ -308,41 +312,41 @@ extension UIImageView {
     #endif
 }
 
-extension ImageView {
-    
-    #if canImport(Kingfisher)
-    typealias ImageCompletion = (UIImage?, KingfisherError?, PhotoAsset) -> Void
-    
-    @discardableResult
-    func setImage(
-        for asset: PhotoAsset,
-        urlType: DonwloadURLType,
-        forciblyOriginal: Bool = false,
-        progressBlock: DownloadProgressBlock? = nil,
-        downloadTask: ((Kingfisher.DownloadTask?) -> Void)? = nil,
-        completionHandler: ImageCompletion? = nil
-    ) -> Any? {
-        imageView.setImage(
-            for: asset,
-            urlType: urlType,
-            forciblyOriginal: forciblyOriginal,
-            progressBlock: progressBlock,
-            downloadTask: downloadTask,
-            completionHandler: completionHandler
-        )
-    }
-    #else
-    @discardableResult
-    func setVideoCoverImage(
-        for asset: PhotoAsset,
-        imageGenerator: ((AVAssetImageGenerator) -> Void)? = nil,
-        completionHandler: ((UIImage?, PhotoAsset) -> Void)? = nil
-    ) -> Any? {
-        imageView.setVideoCoverImage(
-            for: asset,
-            imageGenerator: imageGenerator,
-            completionHandler: completionHandler
-        )
-    }
-    #endif
-}
+//extension ImageView {
+//    
+//    #if canImport(Kingfisher)
+//    typealias ImageCompletion = (UIImage?, KingfisherError?, PhotoAsset) -> Void
+//    
+//    @discardableResult
+//    func setImage(
+//        for asset: PhotoAsset,
+//        urlType: DonwloadURLType,
+//        forciblyOriginal: Bool = false,
+//        progressBlock: DownloadProgressBlock? = nil,
+//        downloadTask: ((Kingfisher.DownloadTask?) -> Void)? = nil,
+//        completionHandler: ImageCompletion? = nil
+//    ) -> Any? {
+//        imageView.setImage(
+//            for: asset,
+//            urlType: urlType,
+//            forciblyOriginal: forciblyOriginal,
+//            progressBlock: progressBlock,
+//            downloadTask: downloadTask,
+//            completionHandler: completionHandler
+//        )
+//    }
+//    #else
+//    @discardableResult
+//    func setVideoCoverImage(
+//        for asset: PhotoAsset,
+//        imageGenerator: ((AVAssetImageGenerator) -> Void)? = nil,
+//        completionHandler: ((UIImage?, PhotoAsset) -> Void)? = nil
+//    ) -> Any? {
+//        imageView.setVideoCoverImage(
+//            for: asset,
+//            imageGenerator: imageGenerator,
+//            completionHandler: completionHandler
+//        )
+//    }
+//    #endif
+//}

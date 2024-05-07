@@ -14,7 +14,7 @@ extension EditorViewController {
     public typealias CancelHandler = (EditorViewController) -> Void
 }
 
-open class EditorViewController: BaseViewController {
+open class EditorViewController: HXBaseViewController {
     
     public weak var delegate: EditorViewControllerDelegate?
     public var config: EditorConfiguration
@@ -558,7 +558,7 @@ open class EditorViewController: BaseViewController {
     var isPopTransition: Bool = false
     var isTransitionCompletion: Bool = true
     var loadAssetStatus: LoadAssetStatus = .loadding()
-    weak var assetLoadingView: ProgressHUD?
+    weak var assetLoadingView: PhotoHUDProtocol?
     
     var selectedOriginalImage: UIImage?
     var selectedThumbnailImage: UIImage?
@@ -618,6 +618,7 @@ open class EditorViewController: BaseViewController {
     
     var isStartFilterParameterTime: CMTime?
     var lastMusicDownloadTask: URLSessionDownloadTask?
+    var videoCoverView: UIImageView?
     weak var videoTool: EditorVideoTool?
     
     public override func deviceOrientationWillChanged(notify: Notification) {

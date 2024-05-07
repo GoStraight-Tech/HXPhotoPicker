@@ -501,12 +501,7 @@ extension EditorViewController: EditorToolsViewDelegate {
                 }else {
                     let infos = PhotoTools.defaultMusicInfos()
                     if infos.isEmpty {
-                        ProgressHUD.showWarning(
-                            addedTo: view,
-                            text: .textManager.editor.music.emptyHudTitle.text,
-                            animated: true,
-                            delayHide: 1.5
-                        )
+                        PhotoManager.HUDView.showInfo(with: .textManager.editor.music.emptyHudTitle.text, delay: 1.5, animated: true, addedTo: view)
                         return
                     }else {
                         musicView.reloadData(infos: infos)
@@ -706,12 +701,8 @@ extension EditorViewController: EditorToolsViewDelegate {
     }
 }
 
-extension EditorViewController: EditorMaskListViewControllerDelegate {
-    
-    func editorMaskListViewController(
-        _ editorMaskListViewController: EditorMaskListViewController,
-        didSelected image: UIImage
-    ) {
+extension EditorViewController: EditorMaskListDelete {
+    public func editorMaskList(_ chartletList: EditorMaskListProtocol, didSelectedWith image: UIImage) {
         let imageAspectRatio = image.size
         editorView.isFixedRatio = true
         editorView.setMaskImage(image, animated: true)

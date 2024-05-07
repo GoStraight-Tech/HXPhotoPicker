@@ -10,7 +10,7 @@ import UIKit
 import Photos
 
 open class PhotoPickerListViewController:
-    BaseViewController,
+    HXBaseViewController,
     PhotoPickerList,
     PhotopickerListRegisterClass,
     PhotoPickerListFectchCell,
@@ -531,7 +531,7 @@ extension PhotoPickerListViewController: UICollectionViewDelegate {
         isCameraCell = sCell is PickerCameraViewCell
         if isCameraCell {
             if !UIImagePickerController.isSourceTypeAvailable(.camera) ||
-                AssetManager.cameraAuthorizationStatus() != .authorized {
+                AssetPermissionsUtil.cameraAuthorizationStatus != .authorized {
                 return nil
             }
         }
@@ -884,6 +884,19 @@ extension PhotoPickerListViewController: PhotoPickerViewCellDelegate {
         delegate?.photoList(selectedAssetDidChanged: self)
     }
     
+    public func pickerCell(videoRequestDurationCompletion cell: PhotoPickerBaseViewCell) {
+        if !cell.photoAsset.isSelected &&
+            config.cell.isShowDisableMask &&
+            pickerConfig.maximumSelectedVideoFileSize == 0 &&
+            pickerConfig.maximumSelectedPhotoFileSize == 0 {
+            cell.canSelect = pickerController.pickerData.canSelect(
+                cell.photoAsset,
+                isShowHUD: false
+            )
+        }else {
+            cell.canSelect = true
+        }
+    }
 }
 
 extension PhotoPickerListViewController: PhotoPeekViewControllerDelegate {

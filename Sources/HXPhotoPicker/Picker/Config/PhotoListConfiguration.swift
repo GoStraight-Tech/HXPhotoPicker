@@ -46,15 +46,15 @@ public struct PhotoListConfiguration {
     /// Cancel button image name
     /// 取消按钮图片名
     public var cancelImageName: String {
-        get { .imageResource.picker.photoList.cancel }
-        set { HX.imageResource.picker.photoList.cancel = newValue }
+        get { .imageResource.picker.photoList.cancel.name }
+        set { HX.imageResource.picker.photoList.cancel = .local(newValue) }
     }
     
     /// Cancel button image name in dark mode
     /// 暗黑模式下取消按钮图片名
     public var cancelDarkImageName: String {
-        get { .imageResource.picker.photoList.cancelDark }
-        set { HX.imageResource.picker.photoList.cancelDark = newValue }
+        get { .imageResource.picker.photoList.cancelDark.name }
+        set { HX.imageResource.picker.photoList.cancelDark = .local(newValue) }
     }
     
     /// 导航栏是否显示筛选按钮
@@ -146,7 +146,26 @@ public struct PhotoListConfiguration {
     
     /// The name saved in the custom album, or BundleName when it is empty
     /// 保存在自定义相册的名字，为空时则取 BundleName
-    public var customAlbumName: String?
+    public var customAlbumName: String? {
+        get {
+            switch saveSystemAlbumType {
+            case .custom(let name):
+                return name
+            default:
+                return nil
+            }
+        }
+        set {
+            if let name = newValue {
+                saveSystemAlbumType = .custom(name)
+            }else {
+                saveSystemAlbumType = .displayName
+            }
+        }
+    }
+    
+    /// 保存到自定义相册的类型
+    public var saveSystemAlbumType: AssetSaveUtil.AlbumType = .displayName
     
     /// When the album permission is the selected photo, it is allowed to add more cells and select more photos/videos
     /// 当相册权限为选中的照片时，允许添加更多cell，选择更多照片/视频
@@ -251,19 +270,19 @@ extension PhotoListConfiguration {
         /// camera icon
         /// 相机图标
         public var cameraImageName: String {
-            get { .imageResource.picker.photoList.cell.camera }
-            set { HX.imageResource.picker.photoList.cell.camera = newValue }
+            get { .imageResource.picker.photoList.cell.camera.name }
+            set { HX.imageResource.picker.photoList.cell.camera = .local(newValue) }
         }
         
         /// Camera icon in dark style / icon after successful camera preview
         /// 暗黑风格下的相机图标 / 相机预览成功之后的图标
         public var cameraDarkImageName: String {
-            get { .imageResource.picker.photoList.cell.cameraDark }
-            set { HX.imageResource.picker.photoList.cell.cameraDark = newValue }
+            get { .imageResource.picker.photoList.cell.cameraDark.name }
+            set { HX.imageResource.picker.photoList.cell.cameraDark = .local(newValue) }
         }
         
         public init() {
-            HX.imageResource.picker.photoList.cell.camera = "hx_picker_photoList_photograph"
+            HX.imageResource.picker.photoList.cell.camera = .local("hx_picker_photoList_photograph")
         }
     }
 }

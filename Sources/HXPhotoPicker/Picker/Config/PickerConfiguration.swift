@@ -8,38 +8,16 @@
 
 import UIKit
 
-public struct PickerConfiguration: IndicatorTypeConfig, PickerDebugLogsConfig {
+public struct PickerConfiguration: IndicatorTypeConfig, PhotoDebugLogsConfig, PhotoHUDConfig {
     
     /// 图片资源
-    public var imageResource: HX.ImageResource.Picker {
-        HX.ImageResource.shared.picker
-    }
+    public var imageResource: HX.ImageResource { HX.ImageResource.shared }
     
     /// 文本管理
-    public var textManager: HX.TextManager.Picker {
-        HX.TextManager.shared.picker
-    }
+    public var textManager: HX.TextManager { HX.TextManager.shared }
     
     /// 主题色
-    public var themeColor: UIColor = .systemBlue {
-        didSet {
-            setThemeColor(themeColor)
-        }
-    }
-    
-    /// 获取 AssetCollection
-    public var fetchAssetCollection: PhotoFetchAssetCollection.Type = DefaultPhotoFetchAssetCollection.self
-    
-    /// 获取 Asset
-    public var fetchAsset: PhotoFetchAsset.Type = DefaultPhotoFetchAsset.self
-    
-    public var isFetchDeatilsAsset: Bool = false
-    
-    /// 获取数据
-    public var fetchdata: PhotoFetchData.Type = PhotoFetchData.self
-    
-    /// 选择数据
-    public var pickerData: PhotoPickerData.Type = PhotoPickerData.self
+    public var themeColor: UIColor = .systemBlue { didSet { setThemeColor(themeColor) } }
     
     /// 在相册权限受限时，移除授权的照片时是否移除对应选择的数据
     /// Whether to remove the corresponding selected data when removing authorized assets
@@ -50,15 +28,23 @@ public struct PickerConfiguration: IndicatorTypeConfig, PickerDebugLogsConfig {
     /// Selector display style, effective when albumShowMode = .popup and fullscreen popup
     /// 选择器展示样式，当 albumShowMode = .popup 并且全屏弹出时有效
     /// rightSwipe: 是否允许右滑手势返回。与微信右滑手势返回一致
+    /// ```swift
+    /// /// 如果返回过程中没有显示背景视图，请将fromVC传入
+    /// config.pickerPresentStyle = .present(rightSwipe: .init(50, viewControlls: [FromVC.self]))
+    /// ```
     public var pickerPresentStyle: PickerPresentStyle = .present()
     
     /// If the built-in language is not enough, you can add a custom language text
-    /// PhotoManager.shared.customLanguages - custom language array
-    /// PhotoManager.shared.fixedCustomLanguage - If there are multiple custom languages, one can be fixed to display
+    /// customLanguages - custom language array
     /// 如果自带的语言不够，可以添加自定义的语言文字
-    /// PhotoManager.shared.customLanguages - 自定义语言数组
-    /// PhotoManager.shared.fixedCustomLanguage - 如果有多种自定义语言，可以固定显示某一种
+    /// customLanguages - 自定义语言数组
     public var languageType: LanguageType = .system
+    
+    /// 自定义语言
+    public var customLanguages: [CustomLanguage] {
+        get { PhotoManager.shared.customLanguages }
+        set { PhotoManager.shared.customLanguages = newValue }
+    }
     
     /// Appearance style
     /// 外观风格
@@ -191,6 +177,16 @@ public struct PickerConfiguration: IndicatorTypeConfig, PickerDebugLogsConfig {
     /// 跳转时允许自定义转场动画
     public var allowCustomTransitionAnimation: Bool = true
     
+    /// 选择器自定义转场动画实现
+    public var pickerTransitionAnimator: PhotoPickerControllerAnimationTransitioning.Type = PhotoPickerControllerAnimator.self
+    /// 选择器自定义手势转场动画实现
+    public var pickerInteractiveTransitionAnimator: PhotoPickerControllerInteractiveTransition.Type = PhotoPickerControllerInteractiveAnimator.self
+    
+    /// 外部预览自定义转场动画实现
+    public var browserTransitionAnimator: PhotoBrowserAnimationTransitioning.Type = PhotoBrowserAnimator.self
+    /// 外部预览自定义手势转场动画实现
+    public var browserInteractiveTransitionAnimator: PhotoBrowserInteractiveTransition.Type = PhotoBrowserInteractiveAnimator.self
+    
     /// Status bar style
     /// 状态栏样式
     public var statusBarStyle: UIStatusBarStyle = .default
@@ -254,8 +250,8 @@ public struct PickerConfiguration: IndicatorTypeConfig, PickerDebugLogsConfig {
     /// The name of the cover image when there are no assets in the album
     /// 当相册里没有资源时的封面图片名
     public var emptyCoverImageName: String {
-        get { .imageResource.picker.albumList.emptyCover }
-        set { HX.imageResource.picker.albumList.emptyCover = newValue }
+        get { .imageResource.picker.albumList.emptyCover.name }
+        set { HX.imageResource.picker.albumList.emptyCover = .local(newValue) }
     }
     
     /// Photo list configuration
@@ -276,6 +272,16 @@ public struct PickerConfiguration: IndicatorTypeConfig, PickerDebugLogsConfig {
     
     public var splitSeparatorLineColor: UIColor?
     public var splitSeparatorLineDarkColor: UIColor?
+    
+    /// 获取 AssetCollection
+    public var fetchAssetCollection: PhotoFetchAssetCollection.Type = DefaultPhotoFetchAssetCollection.self
+    /// 获取 Asset
+    public var fetchAsset: PhotoFetchAsset.Type = DefaultPhotoFetchAsset.self
+    public var isFetchDeatilsAsset: Bool = false
+    /// 获取数据
+    public var fetchdata: PhotoFetchData.Type = PhotoFetchData.self
+    /// 选择数据
+    public var pickerData: PhotoPickerData.Type = PhotoPickerData.self
     
     public init() {
         if #available(iOS 13.0, *) {
@@ -302,5 +308,6 @@ public struct PickerConfiguration: IndicatorTypeConfig, PickerDebugLogsConfig {
         albumController.setThemeColor(color)
         photoList.setThemeColor(color)
         previewView.setThemeColor(color)
+        notAuthorized.setThemeColor(color)
     }
 }

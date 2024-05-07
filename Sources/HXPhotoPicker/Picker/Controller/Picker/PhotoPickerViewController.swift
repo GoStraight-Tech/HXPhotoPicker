@@ -17,18 +17,21 @@ public class PhotoPickerViewController: PhotoBaseViewController {
         self.config = config.photoList
         super.init(config: config)
     }
+    public var photoToolbar: PhotoToolBar!
     
     var assetCollection: PhotoAssetCollection!
     var titleView: PhotoPickerNavigationTitle!
     var listView: PhotoPickerList!
     var albumBackgroudView: UIView!
     var albumView: PhotoAlbumList!
-    var photoToolbar: PhotoToolBar!
     var isShowToolbar: Bool = false
     var didInitViews: Bool = false
     var showLoading: Bool = false
-    
     var orientationDidChange: Bool = false
+    var isDisableLayout: Bool = false
+    var isFirstLayout: Bool = true
+    var appropriatePlaceAsset: PhotoAsset?
+    var navigationBarHeight: CGFloat?
     weak var finishItem: PhotoNavigationItem?
     
     public override func viewDidLoad() {
@@ -43,7 +46,7 @@ public class PhotoPickerViewController: PhotoBaseViewController {
         fetchData()
     }
     
-    override func updateColors() {
+    public override func updateColors() {
         let isDark = PhotoManager.isDark
         view.backgroundColor = isDark ? config.backgroundDarkColor : config.backgroundColor
         if let listView = listView {
@@ -68,10 +71,6 @@ public class PhotoPickerViewController: PhotoBaseViewController {
         photoToolbar.deviceOrientationDidChanged()
     }
     
-    var isDisableLayout: Bool = false
-    var isFirstLayout: Bool = true
-    var appropriatePlaceAsset: PhotoAsset?
-    var navigationBarHeight: CGFloat?
     public override func viewDidLayoutSubviews() {
         super.viewDidLayoutSubviews()
         if isDisableLayout {
@@ -194,7 +193,7 @@ public class PhotoPickerViewController: PhotoBaseViewController {
         if isShowToolbar {
             photoToolbar.viewDidAppear(self)
         }
-        weakController?.resetDelegate()
+        weakController?.setupDelegate()
     }
     
     public override func viewWillDisappear(_ animated: Bool) {
@@ -345,7 +344,6 @@ extension PhotoPickerViewController {
 }
 
 extension PhotoPickerViewController: PhotoNavigationItemDelegate {
-    
     public func photoItem(presentFilterAssets photoItem: PhotoNavigationItem, modalPresentationStyle: UIModalPresentationStyle) {
         didFilterItemClick(modalPresentationStyle: modalPresentationStyle)
     }

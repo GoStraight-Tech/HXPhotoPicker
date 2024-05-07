@@ -21,11 +21,15 @@ extension PhotoPickerViewController: PhotoPickerListDelegate {
         if !pickerController.shouldClickCell(photoAsset: asset, index: index) {
             return
         }
-        var selectionTapAction: SelectionTapAction
-        if asset.mediaType == .photo {
-            selectionTapAction = pickerConfig.photoSelectionTapAction
+        let selectionTapAction: SelectionTapAction
+        if let tapAction = pickerController.cellTapAction(photoAsset: asset, index: index) {
+            selectionTapAction = tapAction
         }else {
-            selectionTapAction = pickerConfig.videoSelectionTapAction
+            if asset.mediaType == .photo {
+                selectionTapAction = pickerConfig.photoSelectionTapAction
+            }else {
+                selectionTapAction = pickerConfig.videoSelectionTapAction
+            }
         }
         switch selectionTapAction {
         case .preview:
@@ -93,15 +97,11 @@ extension PhotoPickerViewController: PhotoPickerListDelegate {
                 ) {
                     pickerController.singleFinishCallback(for: photoAsset)
                 }
-            }else {
-                if let cell = listView.getCell(for: photoAsset) as? PhotoPickerViewCell {
-                    cell.selectedAction(false)
-                }
+                return
             }
-        }else {
-            if let cell = listView.getCell(for: photoAsset) as? PhotoPickerViewCell {
-                cell.selectedAction(true)
-            }
+        }
+        if let cell = listView.getCell(for: photoAsset) as? PhotoPickerViewCell {
+            cell.selectedAction(photoAsset.isSelected)
         }
     }
     
@@ -192,6 +192,7 @@ extension PhotoPickerViewController: PhotoPickerListDelegate {
         #endif
         return false
     }
+    
     @discardableResult
     func openVideoEditor(
         photoAsset: PhotoAsset,

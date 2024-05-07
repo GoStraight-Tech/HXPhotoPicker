@@ -43,6 +43,10 @@ public extension PhotoPickerListSwipeSelect {
     ) {
         if let indexPath = collectionView.indexPathForItem(at: localPoint),
            let photoAsset = getCell(for: indexPath.item)?.photoAsset {
+            if photoAsset.mediaType == .video &&
+                pickerController.pickerData.videoDurationExceedsTheLimit(photoAsset) {
+                return
+            }
             if !pickerController.pickerData.canSelect(photoAsset, isShowHUD: false) && !photoAsset.isSelected {
                 return
             }
@@ -144,6 +148,10 @@ public extension PhotoPickerListSwipeSelect {
                 updateCellSelectedTitle()
             }else {
                 if let photoAsset = getCell(for: lastIndex)?.photoAsset {
+                    if photoAsset.mediaType == .video &&
+                        pickerController.pickerData.videoDurationExceedsTheLimit(photoAsset) {
+                        return
+                    }
                     if !pickerController.pickerData.canSelect(photoAsset, isShowHUD: false) && !photoAsset.isSelected {
                         return
                     }
@@ -218,10 +226,20 @@ public extension PhotoPickerListSwipeSelect {
         swipeSelectedIndexArray = nil
     }
     private func panGRChangedUpdateState(index: Int, state: PhotoPickerListSwipeSelectState) {
-        if index >= assets.count && !needOffset {
-            return
+        if needOffset {
+            if index < offsetIndex {
+                return
+            }
+        }else {
+            if index >= assets.count {
+                return
+            }
         }
         let photoAsset = getAsset(for: index)
+        if photoAsset.mediaType == .video &&
+            pickerController.pickerData.videoDurationExceedsTheLimit(photoAsset) {
+            return
+        }
         if swipeSelectState == .select {
             if let array = swipeSelectedIndexArray,
                !photoAsset.isSelected,
@@ -356,11 +374,11 @@ public extension PhotoPickerListSwipeSelect {
         }
         if pickerController.pickerData.isFull && showHUD {
             swipeSelectPanGR?.isEnabled = false
-            ProgressHUD.showWarning(
-                addedTo: navigationController?.view,
-                text: .textManager.picker.maximumSelectedHudTitle.text,
+            PhotoManager.HUDView.showInfo(
+                with: .textManager.picker.maximumSelectedHudTitle.text,
+                delay: 1.5,
                 animated: true,
-                delayHide: 1.5
+                addedTo: navigationController?.view
             )
             endedPanGestureRecognizer()
             swipeSelectPanGR?.isEnabled = true

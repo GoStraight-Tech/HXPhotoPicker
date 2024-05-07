@@ -11,44 +11,44 @@ import Photos
 public extension PhotoAsset {
     /// 保存到系统相册
     func saveToSystemAlbum(
-        albumName: String? = nil,
-        _ completion: ((PHAsset?) -> Void)? = nil
+        albumType: AssetSaveUtil.AlbumType = .displayName,
+        _ completion: ((Result<PHAsset, Error>) -> Void)? = nil
     ) {
         if mediaSubType == .localLivePhoto {
             requestLocalLivePhotoURL {
                 switch $0 {
                 case .success(let result):
                     guard let livePhoto = result.livePhoto else {
-                        completion?(nil)
+                        completion?(.failure(AssetError.localLivePhotoIsEmpty))
                         return
                     }
-                    AssetManager.save(
+                    AssetSaveUtil.save(
                         type: .livePhoto(imageURL: livePhoto.imageURL, videoURL: livePhoto.videoURL),
-                        customAlbumName: albumName
+                        albumType: albumType
                     ) {
                         switch $0 {
                         case .success(let phAsset):
-                            completion?(phAsset)
-                        case .failure:
-                            completion?(nil)
+                            completion?(.success(phAsset))
+                        case .failure(let error):
+                            completion?(.failure(error))
                         }
                     }
-                default:
-                    completion?(nil)
+                case .failure(let error):
+                    completion?(.failure(error))
                 }
             }
             return
         }
-        func save(_ type: AssetManager.PhotoSaveType) {
-            AssetManager.save(
+        func save(_ type: AssetSaveUtil.SaveType) {
+            AssetSaveUtil.save(
                 type: type,
-                customAlbumName: albumName
+                albumType: albumType
             ) {
                 switch $0 {
                 case .success(let phAsset):
-                    completion?(phAsset)
-                case .failure:
-                    completion?(nil)
+                    completion?(.success(phAsset))
+                case .failure(let error):
+                    completion?(.failure(error))
                 }
             }
         }
@@ -65,7 +65,7 @@ public extension PhotoAsset {
                             if let image = image {
                                 save(.image(image))
                             }else {
-                                completion?(nil)
+                                completion?(.failure(AssetError.imageDownloadFailed))
                             }
                         })
                         #endif
@@ -80,15 +80,15 @@ public extension PhotoAsset {
                             if let videoURL = videoURL {
                                 save(.videoURL(videoURL))
                             }else {
-                                completion?(nil)
+                                completion?(.failure(AssetError.videoDownloadFailed))
                             }
                         }
                     }else {
                         save(.videoURL(response.url))
                     }
                 }
-            case .failure:
-                completion?(nil)
+            case .failure(let error):
+                completion?(.failure(error))
             }
         }
     }
@@ -133,6 +133,7 @@ public extension PhotoAsset {
     /// 获取iCloud状态
     /// - Parameter completion: 是否在iCloud上
     /// - Returns: 请求ID
+    @discardableResult
     func requestICloudState(completion: @escaping (PhotoAsset, Bool) -> Void) -> PHImageRequestID? {
         guard let phAsset = phAsset,
               downloadStatus != .succeed else {
@@ -226,27 +227,45 @@ public extension PhotoAsset {
         hudAddedTo view: UIView? = UIApplication.shared.keyWindow,
         completion: ((PhotoAsset, Bool) -> Void)? = nil
     ) {
-        var loadingView: ProgressHUD?
+        var loadingView: PhotoHUDProtocol?
         syncICloud { _, _ in
-            loadingView = ProgressHUD.showProgress(
-                addedTo: view,
-                text: .textPhotoList.iCloudSyncHudTitle.text + "...",
-                animated: true
-            )
+            loadingView = PhotoManager.HUDView.showProgress(with: .textPhotoList.iCloudSyncHudTitle.text + "...", progress: 0, animated: true, addedTo: view)
         } progressHandler: { _, progress in
-            loadingView?.progress = CGFloat(progress)
+            loadingView?.setProgress(CGFloat(progress))
         } completionHandler: { photoAsset, isSuccess in
-            ProgressHUD.hide(forView: view, animated: isSuccess)
+            PhotoManager.HUDView.dismiss(delay: 0, animated: isSuccess, for: view)
             if !isSuccess {
-                ProgressHUD.showWarning(
-                    addedTo: view,
-                    text: .textPhotoList.iCloudSyncFailedHudTitle.text,
-                    animated: true,
-                    delayHide: 1.5
-                )
+                PhotoManager.HUDView.showInfo(with: .textPhotoList.iCloudSyncFailedHudTitle.text, delay: 1.5, animated: true, addedTo: view)
             }
             loadingView = nil
             completion?(photoAsset, isSuccess)
+        }
+    }
+}
+
+@available(iOS 13.0, *)
+public extension PhotoAsset {
+    
+    /// 保存到系统相册
+    @discardableResult
+    func saveAlbum(_  albumType: AssetSaveUtil.AlbumType = .displayName) async throws -> PHAsset {
+        try await withCheckedThrowingContinuation { continuation in
+            saveToSystemAlbum(albumType: albumType) { result in
+                switch result {
+                case .success(let phAsset):
+                    continuation.resume(returning: phAsset)
+                case .failure(let error):
+                    continuation.resume(throwing: error)
+                }
+            }
+        }
+    }
+    
+    func inIClound() async -> Bool {
+        await withCheckedContinuation { continuation in
+            requestICloudState { _, inIClound in
+                continuation.resume(returning: inIClound)
+            }
         }
     }
 }

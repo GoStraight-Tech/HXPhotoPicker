@@ -28,11 +28,15 @@ open class PhotoPreviewViewCell: UICollectionViewCell, UIScrollViewDelegate {
             scrollContentView.photoAsset = photoAsset
         }
     }
+    public var scrollView: UIScrollView!
+    public var scrollContainerView: UIView! { scrollContentView }
+    public var imageView: UIImageView { scrollContentView.imageView }
+    public func showScrollContainerSubview() { scrollContentView.showOtherSubview() }
+    public func hideScrollContainerSubview() { scrollContentView.hiddenOtherSubview() }
     
     weak var delegate: PhotoPreviewViewCellDelegate?
     
     var scrollContentView: PhotoPreviewContentViewProtocol!
-    var scrollView: UIScrollView!
     
     var statusBarShouldBeHidden = false
     var allowInteration: Bool = true

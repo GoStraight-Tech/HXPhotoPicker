@@ -8,7 +8,7 @@
 
 import UIKit
 
-public class PhotoBaseViewController: BaseViewController, PhotoPickerControllerFectch {
+public class PhotoBaseViewController: HXBaseViewController, PhotoPickerControllerFectch {
     
     let pickerConfig: PickerConfiguration
     init(config: PickerConfiguration) {
@@ -23,7 +23,7 @@ public class PhotoBaseViewController: BaseViewController, PhotoPickerControllerF
         weakController = pickerController
     }
     
-    func updateColors() {
+    open func updateColors() {
         
     }
     

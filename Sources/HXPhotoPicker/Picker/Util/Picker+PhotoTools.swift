@@ -48,38 +48,38 @@ extension PhotoTools {
         }else {
             if collection.localizedTitle == "最近项目" ||
                 collection.localizedTitle == "最近添加" {
-                albumName = "HXAlbumRecents".localized
+                albumName = .textManager.picker.albumRecentsTitle.text
             }else if collection.localizedTitle == "Camera Roll" ||
                         collection.localizedTitle == "相机胶卷" {
-                albumName = "HXAlbumCameraRoll".localized
+                albumName = .textManager.picker.albumCameraRollTitle.text
             }else {
                 switch collection.assetCollectionSubtype {
                 case .smartAlbumUserLibrary:
-                    albumName = "HXAlbumCameraRoll".localized
+                    albumName = .textManager.picker.albumCameraRollTitle.text
                 case .smartAlbumVideos:
-                    albumName = "HXAlbumVideos".localized
+                    albumName = .textManager.picker.albumVideosTitle.text
                 case .smartAlbumPanoramas:
-                    albumName = "HXAlbumPanoramas".localized
+                    albumName = .textManager.picker.albumPanoramasTitle.text
                 case .smartAlbumFavorites:
-                    albumName = "HXAlbumFavorites".localized
+                    albumName = .textManager.picker.albumFavoritesTitle.text
                 case .smartAlbumTimelapses:
-                    albumName = "HXAlbumTimelapses".localized
+                    albumName = .textManager.picker.albumTimelapsesTitle.text
                 case .smartAlbumRecentlyAdded:
-                    albumName = "HXAlbumRecentlyAdded".localized
+                    albumName = .textManager.picker.albumRecentlyAddedTitle.text
                 case .smartAlbumBursts:
-                    albumName = "HXAlbumBursts".localized
+                    albumName = .textManager.picker.albumBurstsTitle.text
                 case .smartAlbumSlomoVideos:
-                    albumName = "HXAlbumSlomoVideos".localized
+                    albumName = .textManager.picker.albumSlomoVideosTitle.text
                 case .smartAlbumSelfPortraits:
-                    albumName = "HXAlbumSelfPortraits".localized
+                    albumName = .textManager.picker.albumSelfPortraitsTitle.text
                 case .smartAlbumScreenshots:
-                    albumName = "HXAlbumScreenshots".localized
+                    albumName = .textManager.picker.albumScreenshotsTitle.text
                 case .smartAlbumDepthEffect:
-                    albumName = "HXAlbumDepthEffect".localized
+                    albumName = .textManager.picker.albumDepthEffectTitle.text
                 case .smartAlbumLivePhotos:
-                    albumName = "HXAlbumLivePhotos".localized
+                    albumName = .textManager.picker.albumLivePhotosTitle.text
                 case .smartAlbumAnimated:
-                    albumName = "HXAlbumAnimated".localized
+                    albumName = .textManager.picker.albumAnimatedTitle.text
                 default:
                     albumName = collection.localizedTitle
                 }
@@ -105,8 +105,8 @@ extension PhotoTools {
                     completionHandler(photoAsset, coverImage)
                     return
                 }
-                let key = videoAsset.videoURL.absoluteString
-                if isCached(forVideo: key) {
+                if let key = videoAsset.videoURL?.absoluteString,
+                   isCached(forVideo: key) {
                     url = getVideoCacheURL(for: key)
                 }else {
                     url = videoAsset.videoURL
@@ -218,60 +218,6 @@ extension PhotoTools {
             }
         }else {
             completion?(nil, PhotoError.error(type: .exportFailed, message: "设备不支持导出：" + exportPreset.name))
-        }
-        return nil
-    }
-    
-    @discardableResult
-    public static func getVideoDuration(
-        for photoAsset: PhotoAsset,
-        completionHandler:
-            @escaping (PhotoAsset, TimeInterval) -> Void
-    ) -> AVAsset? {
-        if photoAsset.mediaType == .video {
-            var url: URL?
-            if let videoAsset = photoAsset.localVideoAsset,
-               photoAsset.isLocalAsset {
-                if videoAsset.duration > 0 {
-                    completionHandler(photoAsset, videoAsset.duration)
-                    return nil
-                }
-                url = videoAsset.videoURL
-            }else if let videoAsset = photoAsset.networkVideoAsset,
-                     photoAsset.mediaSubType.isNetwork {
-                if videoAsset.duration > 0 {
-                    completionHandler(photoAsset, videoAsset.duration)
-                    return nil
-                }
-                let key = videoAsset.videoURL.absoluteString
-                if isCached(forVideo: key) {
-                    url = getVideoCacheURL(for: key)
-                }else {
-                    url = videoAsset.videoURL
-                }
-            }
-            if let url = url {
-                let avAsset = AVURLAsset(url: url)
-                avAsset.loadValuesAsynchronously(forKeys: ["duration"]) {
-                    if avAsset.statusOfValue(forKey: "duration", error: nil) != .loaded {
-                        DispatchQueue.main.async {
-                            completionHandler(photoAsset, 0)
-                        }
-                        return
-                    }
-                    let duration = avAsset.duration.seconds
-                    if photoAsset.isNetworkAsset {
-                        photoAsset.networkVideoAsset?.duration = duration
-                    }else {
-                        photoAsset.localVideoAsset?.duration = duration
-                    }
-                    photoAsset.updateVideoDuration(duration)
-                    DispatchQueue.main.async {
-                        completionHandler(photoAsset, duration)
-                    }
-                }
-                return avAsset
-            }
         }
         return nil
     }

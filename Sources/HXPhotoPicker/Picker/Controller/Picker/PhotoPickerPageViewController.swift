@@ -8,7 +8,7 @@
 
 import UIKit
 
-public class PhotoPickerPageViewController: BaseViewController, PhotoPickerList {
+public class PhotoPickerPageViewController: HXBaseViewController, PhotoPickerList {
     
     public weak var delegate: PhotoPickerListDelegate?
     
@@ -394,6 +394,9 @@ class PhotoPickerPageHeaderView: UIView {
     
     override func layoutSubviews() {
         super.layoutSubviews()
+        if titles.isEmpty {
+            return
+        }
         let count = CGFloat(titles.count)
         let viewWidth = width / count
         for (index, view) in subviews.enumerated() {

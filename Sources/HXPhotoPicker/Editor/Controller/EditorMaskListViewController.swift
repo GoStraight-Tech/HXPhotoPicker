@@ -9,16 +9,8 @@ import UIKit
 import CoreGraphics
 import CoreText
 
-protocol EditorMaskListViewControllerDelegate: AnyObject {
-    func editorMaskListViewController(
-        _ editorMaskListViewController: EditorMaskListViewController,
-        didSelected image: UIImage
-    )
-}
-
-class EditorMaskListViewController: BaseViewController {
-    
-    weak var delegate: EditorMaskListViewControllerDelegate?
+public class EditorMaskListViewController: HXBaseViewController, EditorMaskListProtocol {
+    public weak var delegate: EditorMaskListDelete?
     
     private var bgView: UIVisualEffectView!
     private var finishButton: UIButton!
@@ -26,12 +18,12 @@ class EditorMaskListViewController: BaseViewController {
     private var collectionView: UICollectionView!
     
     let config: EditorConfiguration.CropSize
-    init(config: EditorConfiguration.CropSize) {
-        self.config = config
+    public required init(config: EditorConfiguration) {
+        self.config = config.cropSize
         super.init(nibName: nil, bundle: nil)
     }
     
-    override func viewDidLoad() {
+    public override func viewDidLoad() {
         super.viewDidLoad()
         initViews()
         view.backgroundColor = .clear
@@ -81,13 +73,13 @@ class EditorMaskListViewController: BaseViewController {
         dismiss(animated: true)
     }
     
-    override func viewWillAppear(_ animated: Bool) {
+    public override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
         navigationController?.navigationBar.setBackgroundImage(.image(for: .clear, havingSize: .zero), for: .default)
         navigationController?.navigationBar.titleTextAttributes = [.foregroundColor: UIColor.white]
     }
     
-    override func viewDidLayoutSubviews() {
+    public override func viewDidLayoutSubviews() {
         super.viewDidLayoutSubviews()
         bgView.frame = view.bounds
         
@@ -115,10 +107,10 @@ class EditorMaskListViewController: BaseViewController {
 }
 
 extension EditorMaskListViewController: UICollectionViewDataSource, UICollectionViewDelegate {
-    func collectionView(_ collectionView: UICollectionView, numberOfItemsInSection section: Int) -> Int {
+    public func collectionView(_ collectionView: UICollectionView, numberOfItemsInSection section: Int) -> Int {
         config.maskList.count
     }
-    func collectionView(
+    public func collectionView(
         _ collectionView: UICollectionView,
         cellForItemAt indexPath: IndexPath
     ) -> UICollectionViewCell {
@@ -130,22 +122,22 @@ extension EditorMaskListViewController: UICollectionViewDataSource, UICollection
         return cell
     }
     
-    func collectionView(_ collectionView: UICollectionView, didSelectItemAt indexPath: IndexPath) {
+    public func collectionView(_ collectionView: UICollectionView, didSelectItemAt indexPath: IndexPath) {
         collectionView.deselectItem(at: indexPath, animated: true)
         let maskType = config.maskList[indexPath.item]
         switch maskType {
         case .image(let image):
+            delegate?.editorMaskList(self, didSelectedWith: image)
             dismiss(animated: true)
-            delegate?.editorMaskListViewController(self, didSelected: image)
         case .imageName(let imageName):
             if let image = imageName.image {
+                delegate?.editorMaskList(self, didSelectedWith: image)
                 dismiss(animated: true)
-                delegate?.editorMaskListViewController(self, didSelected: image)
             }else {
-                ProgressHUD.showWarning(addedTo: view, text: .textManager.editor.processingFailedHUDTitle.text, animated: true, delayHide: 1.5)
+                PhotoManager.HUDView.showInfo(with: .textManager.editor.processingFailedHUDTitle.text, delay: 1.5, animated: true, addedTo: view)
             }
         case .text(let text, let font):
-            ProgressHUD.showLoading(addedTo: self.view)
+            PhotoManager.HUDView.show(with: nil, delay: 0, animated: true, addedTo: view)
             let viewSize = view.size
             DispatchQueue.global(qos: .userInitiated).async {
                 let newFont = UIFont(name: font.fontName, size: min(viewSize.width, viewSize.height)) ?? font
@@ -165,9 +157,9 @@ extension EditorMaskListViewController: UICollectionViewDataSource, UICollection
                     string.draw(in: rect, withAttributes: attDic)
                 }
                 DispatchQueue.main.async {
-                    ProgressHUD.hide(forView: self.view)
+                    PhotoManager.HUDView.dismiss(delay: 0, animated: true, for: self.view)
+                    self.delegate?.editorMaskList(self, didSelectedWith: image)
                     self.dismiss(animated: true)
-                    self.delegate?.editorMaskListViewController(self, didSelected: image)
                 }
             }
         }

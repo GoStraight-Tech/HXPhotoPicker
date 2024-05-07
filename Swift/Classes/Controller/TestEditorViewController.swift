@@ -12,7 +12,7 @@ import AVFoundation
 import GDPerformanceView_Swift
 #endif
 
-class TestEditorViewController: BaseViewController {
+class TestEditorViewController: HXBaseViewController {
     
     lazy var contentView: UIView = {
         let view = UIView()
@@ -212,16 +212,17 @@ class TestEditorViewController: BaseViewController {
                             HXPhotoPicker.PhotoBrowser.show(
                                 [.init(.init(videoURL: result.url))],
                                 transitionalImage: PhotoTools.getVideoThumbnailImage(videoURL: result.url, atTime: 0.1)
-                            ) { _ in
+                            ) { _, _ in
                                 self.editorView.finalView
                             } longPressHandler: { _, photoAsset, photoBrowser in
                                 photoBrowser.view.hx.show()
-                                photoAsset.saveToSystemAlbum { phAsset in
+                                photoAsset.saveToSystemAlbum { result in
                                     photoBrowser.view.hx.hide()
-                                    if phAsset == nil {
-                                        photoBrowser.view.hx.showWarning(text: "保存失败", delayHide: 1.5)
-                                    }else {
-                                        photoBrowser.view.hx.showSuccess(text: "保存成功", delayHide: 1.5)
+                                    switch result {
+                                    case .success:
+                                        photoBrowser.view.hx.showSuccess(text: "保存成功", delayHide: 1.5, animated: true)
+                                    case .failure:
+                                        photoBrowser.view.hx.showWarning(text: "保存失败", delayHide: 1.5, animated: true)
                                     }
                                 }
                             }
@@ -251,16 +252,17 @@ class TestEditorViewController: BaseViewController {
                         HXPhotoPicker.PhotoBrowser.show(
                             [.init(.init(result.url))],
                             transitionalImage: result.image
-                        ) { _ in
+                        ) { _, _ in
                             self.editorView.finalView
                         } longPressHandler: { _, photoAsset, photoBrowser in
                             photoBrowser.view.hx.show()
-                            photoAsset.saveToSystemAlbum { phAsset in
+                            photoAsset.saveToSystemAlbum { result in
                                 photoBrowser.view.hx.hide()
-                                if phAsset == nil {
-                                    photoBrowser.view.hx.showWarning(text: "保存失败", delayHide: 1.5)
-                                }else {
-                                    photoBrowser.view.hx.showSuccess(text: "保存成功", delayHide: 1.5)
+                                switch result {
+                                case .success:
+                                    photoBrowser.view.hx.showSuccess(text: "保存成功", delayHide: 1.5, animated: true)
+                                case .failure:
+                                    photoBrowser.view.hx.showWarning(text: "保存失败", delayHide: 1.5, animated: true)
                                 }
                             }
                         }

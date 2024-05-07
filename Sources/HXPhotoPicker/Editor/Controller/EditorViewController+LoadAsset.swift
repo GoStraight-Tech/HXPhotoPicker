@@ -15,7 +15,7 @@ extension EditorViewController {
     
     enum LoadAssetStatus {
         case loadding(Bool = false)
-        case successful(EditorAsset.AssetType)
+        case succeed(EditorAsset.AssetType)
         case failure
     }
     
@@ -28,7 +28,7 @@ extension EditorViewController {
         switch type {
         case .image(let image):
             if !isTransitionCompletion {
-                loadAssetStatus = .successful(.image(image))
+                loadAssetStatus = .succeed(.image(image))
                 return
             }
             editorView.setImage(image)
@@ -39,7 +39,7 @@ extension EditorViewController {
             loadLastEditedData()
         case .imageData(let imageData):
             if !isTransitionCompletion {
-                loadAssetStatus = .successful(.imageData(imageData))
+                loadAssetStatus = .succeed(.imageData(imageData))
                 return
             }
             editorView.setImageData(imageData)
@@ -51,7 +51,7 @@ extension EditorViewController {
             loadLastEditedData()
         case .video(let url):
             if !isTransitionCompletion {
-                loadAssetStatus = .successful(.video(url))
+                loadAssetStatus = .succeed(.video(url))
                 return
             }
             let avAsset = AVAsset(url: url)
@@ -62,7 +62,7 @@ extension EditorViewController {
             loadLastEditedData()
         case .videoAsset(let avAsset):
             if !isTransitionCompletion {
-                loadAssetStatus = .successful(.videoAsset(avAsset))
+                loadAssetStatus = .succeed(.videoAsset(avAsset))
                 return
             }
             let image = avAsset.getImage(at: 0.1)
@@ -472,7 +472,7 @@ extension EditorViewController {
         if PhotoTools.isCached(forVideo: key) {
             let localURL = PhotoTools.getVideoCacheURL(for: key)
             if !isTransitionCompletion {
-                loadAssetStatus = .successful(.video(localURL))
+                loadAssetStatus = .succeed(.video(localURL))
                 return
             }
             let avAsset = AVAsset(url: localURL)
@@ -484,7 +484,7 @@ extension EditorViewController {
             return
         }
         if isTransitionCompletion {
-            assetLoadingView = ProgressHUD.showLoading(addedTo: view, text: "视频下载中".localized, animated: true)
+            assetLoadingView = PhotoManager.HUDView.show(with: .textManager.editor.videoLoadTitle.text, delay: 0, animated: true, addedTo: view)
             bringViews()
         }else {
             loadAssetStatus = .loadding(true)
@@ -493,8 +493,7 @@ extension EditorViewController {
             with: videoURL
         ) { [weak self] (progress, _) in
             if progress > 0 {
-                self?.assetLoadingView?.mode = .circleProgress
-                self?.assetLoadingView?.progress = CGFloat(progress)
+                self?.assetLoadingView?.setProgress(.init(progress))
             }
         } completionHandler: { [weak self] (url, error, _) in
             guard let self = self else {
@@ -502,7 +501,7 @@ extension EditorViewController {
             }
             if let url = url {
                 if !self.isTransitionCompletion {
-                    self.loadAssetStatus = .successful(.video(url))
+                    self.loadAssetStatus = .succeed(.video(url))
                     return
                 }
                 #if HXPICKER_ENABLE_PICKER
@@ -511,7 +510,7 @@ extension EditorViewController {
                 }
                 #endif
                 self.assetLoadingView = nil
-                ProgressHUD.hide(forView: self.view, animated: false)
+                PhotoManager.HUDView.dismiss(delay: 0, animated: false, for: self.view)
                 let avAsset = AVAsset(url: url)
                 let image = avAsset.getImage(at: 0.1)
                 self.editorView.setAVAsset(avAsset, coverImage: image)
@@ -527,7 +526,7 @@ extension EditorViewController {
                     return
                 }
                 self.assetLoadingView = nil
-                ProgressHUD.hide(forView: self.view, animated: false)
+                PhotoManager.HUDView.dismiss(delay: 0, animated: false, for: self.view)
                 self.loadFailure()
             }
         }
@@ -536,7 +535,7 @@ extension EditorViewController {
     #if canImport(Kingfisher)
     func downloadNetworkImage(_ url: URL) {
         if isTransitionCompletion {
-            assetLoadingView = ProgressHUD.showLoading(addedTo: view, animated: true)
+            assetLoadingView = PhotoManager.HUDView.show(with: nil, delay: 0, animated: true, addedTo: view)
         }else {
             loadAssetStatus = .loadding(true)
         }
@@ -546,16 +545,15 @@ extension EditorViewController {
         ) { [weak self] (receiveSize, totalSize) in
             let progress = CGFloat(receiveSize) / CGFloat(totalSize)
             if progress > 0 {
-                self?.assetLoadingView?.mode = .circleProgress
-                self?.assetLoadingView?.text = "图片下载中".localized
-                self?.assetLoadingView?.progress = progress
+                self?.assetLoadingView?.setText(.textManager.editor.photoLoadTitle.text)
+                self?.assetLoadingView?.setProgress(.init(progress))
             }
         } completionHandler: { [weak self] (image) in
             guard let self = self else { return }
             self.assetLoadingView = nil
             if let image = image {
                 if !self.isTransitionCompletion {
-                    self.loadAssetStatus = .successful(.image(image))
+                    self.loadAssetStatus = .succeed(.image(image))
                     return
                 }
                 self.editorView.setImage(image)
@@ -565,7 +563,7 @@ extension EditorViewController {
                 DispatchQueue.global().async {
                     self.loadThumbnailImage(image, viewSize: viewSize)
                 }
-                ProgressHUD.hide(forView: self.view, animated: true)
+                PhotoManager.HUDView.dismiss(delay: 0, animated: true, for: self.view)
             }else {
                 if !self.isTransitionCompletion {
                     self.loadAssetStatus = .failure
@@ -606,7 +604,7 @@ extension EditorViewController {
             return
         }
         if isTransitionCompletion {
-            ProgressHUD.showLoading(addedTo: view, animated: true)
+            PhotoManager.HUDView.show(with: nil, delay: 0, animated: true, addedTo: view)
         }
         let viewSize = UIDevice.screenSize
         DispatchQueue.global().async {
@@ -645,10 +643,10 @@ extension EditorViewController {
                 DispatchQueue.main.async {
                     if let image = image {
                         if !self.isTransitionCompletion {
-                            self.loadAssetStatus = .successful(.image(image))
+                            self.loadAssetStatus = .succeed(.image(image))
                             return
                         }
-                        ProgressHUD.hide(forView: self.view, animated: true)
+                        PhotoManager.HUDView.dismiss(delay: 0, animated: true, for: self.view)
                         self.editorView.setImage(image)
                         self.loadCompletion()
                         self.loadLastEditedData()
@@ -660,7 +658,7 @@ extension EditorViewController {
                             self.loadAssetStatus = .failure
                             return
                         }
-                        ProgressHUD.hide(forView: self.view, animated: true)
+                        PhotoManager.HUDView.dismiss(delay: 0, animated: true, for: self.view)
                         self.loadFailure(message: .textManager.editor.photoLoadFailedAlertMessage.text)
                     }
                 }
@@ -668,7 +666,7 @@ extension EditorViewController {
                 let image = photoAsset.localVideoAsset?.image
                 DispatchQueue.main.async {
                     if !self.isTransitionCompletion {
-                        self.loadAssetStatus = .successful(.image(image!))
+                        self.loadAssetStatus = .succeed(.image(image!))
                         return
                     }
                     self.editorView.setImage(image)
@@ -678,7 +676,7 @@ extension EditorViewController {
                     DispatchQueue.global().async {
                         self.loadThumbnailImage(image, viewSize: viewSize)
                     }
-                    ProgressHUD.hide(forView: self.view, animated: true)
+                    PhotoManager.HUDView.dismiss(delay: 0, animated: true, for: self.view)
                 }
             }
         }
@@ -689,26 +687,25 @@ extension EditorViewController {
             return
         }
         if isTransitionCompletion {
-            assetLoadingView = ProgressHUD.showLoading(addedTo: view, animated: true)
+            assetLoadingView = PhotoManager.HUDView.show(with: nil, delay: 0, animated: true, addedTo: view)
         }else {
             loadAssetStatus = .loadding(true)
         }
         photoAsset.getNetworkImage(urlType: .original, filterEditor: true) { [weak self] (receiveSize, totalSize) in
             let progress = CGFloat(receiveSize) / CGFloat(totalSize)
             if progress > 0 {
-                self?.assetLoadingView?.mode = .circleProgress
-                self?.assetLoadingView?.text = "图片下载中".localized
-                self?.assetLoadingView?.progress = progress
+                self?.assetLoadingView?.setText(.textManager.editor.photoLoadTitle.text)
+                self?.assetLoadingView?.setProgress(progress)
             }
         } resultHandler: { [weak self] (image) in
             guard let self = self else { return }
             self.assetLoadingView = nil
             if let image = image?.normalizedImage() {
                 if !self.isTransitionCompletion {
-                    self.loadAssetStatus = .successful(.image(image))
+                    self.loadAssetStatus = .succeed(.image(image))
                     return
                 }
-                ProgressHUD.hide(forView: self.view, animated: true)
+                PhotoManager.HUDView.dismiss(delay: 0, animated: true, for: self.view)
                 self.editorView.setImage(image)
                 self.loadCompletion()
                 self.loadLastEditedData()
@@ -721,7 +718,7 @@ extension EditorViewController {
                     self.loadAssetStatus = .failure
                     return
                 }
-                ProgressHUD.hide(forView: self.view, animated: true)
+                PhotoManager.HUDView.dismiss(delay: 0, animated: true, for: self.view)
                 self.loadFailure(message: .textManager.editor.photoLoadFailedAlertMessage.text)
             }
         }
@@ -733,7 +730,7 @@ extension EditorViewController {
             return
         }
         if isTransitionCompletion {
-            assetLoadingView = ProgressHUD.showLoading(addedTo: view, animated: true)
+            assetLoadingView = PhotoManager.HUDView.show(with: nil, delay: 0, animated: true, addedTo: view)
             bringViews()
         }else {
             loadAssetStatus = .loadding(true)
@@ -742,12 +739,11 @@ extension EditorViewController {
             filterEditor: true
         ) { [weak self] _, requestID in
             self?.assetRequestID = requestID
-            self?.assetLoadingView?.mode = .circleProgress
-            self?.assetLoadingView?.text = .textManager.editor.iCloudSyncHudTitle.text + "..."
+            self?.assetLoadingView?.setText(.textManager.editor.iCloudSyncHudTitle.text + "...")
         } progressHandler: { [weak self] _, progress in
             if progress > 0 {
                 DispatchQueue.main.async {
-                    self?.assetLoadingView?.progress = CGFloat(progress)
+                    self?.assetLoadingView?.setProgress(CGFloat(progress))
                 }
             }
         } resultHandler: { [weak self] _, image, info in
@@ -759,7 +755,7 @@ extension EditorViewController {
                         self.loadAssetStatus = .failure
                         return
                     }
-                    ProgressHUD.hide(forView: self.view, animated: true)
+                    PhotoManager.HUDView.dismiss(delay: 0, animated: true, for: self.view)
                     if let inICloud = info?.inICloud {
                         self.loadFailure(message: inICloud ? .textManager.editor.iCloudSyncFailedAlertMessage.text : .textManager.editor.photoLoadFailedAlertMessage.text)
                     }else {
@@ -769,7 +765,7 @@ extension EditorViewController {
                 }
                 if AssetManager.assetDownloadFinined(for: info) || AssetManager.assetCancelDownload(for: info) {
                     if !self.isTransitionCompletion {
-                        self.loadAssetStatus = .successful(.image(image))
+                        self.loadAssetStatus = .succeed(.image(image))
                         return
                     }
                     self.editorView.setImage(image)
@@ -779,7 +775,7 @@ extension EditorViewController {
                     DispatchQueue.global().async {
                         self.loadThumbnailImage(image, viewSize: viewSize)
                     }
-                    ProgressHUD.hide(forView: self.view, animated: true)
+                    PhotoManager.HUDView.dismiss(delay: 0, animated: true, for: self.view)
                 }
             }
         }
@@ -790,7 +786,7 @@ extension EditorViewController {
             return
         }
         if isTransitionCompletion {
-            ProgressHUD.showLoading(addedTo: view, animated: true)
+            PhotoManager.HUDView.show(with: nil, delay: 0, animated: true, addedTo: view)
             bringViews()
         }else {
             loadAssetStatus = .loadding(true)
@@ -808,7 +804,7 @@ extension EditorViewController {
                        let imageData = try? Data(contentsOf: imageURL) {
                         DispatchQueue.main.async {
                             if !self.isTransitionCompletion {
-                                self.loadAssetStatus = .successful(.imageData(imageData))
+                                self.loadAssetStatus = .succeed(.imageData(imageData))
                                 return
                             }
                             self.editorView.setImageData(imageData)
@@ -818,7 +814,7 @@ extension EditorViewController {
                             DispatchQueue.global().async {
                                 self.loadThumbnailImage(.init(contentsOfFile: imageURL.path), viewSize: viewSize)
                             }
-                            ProgressHUD.hide(forView: self.view, animated: true)
+                            PhotoManager.HUDView.dismiss(delay: 0, animated: true, for: self.view)
                         }
                         return
                     }
@@ -826,7 +822,7 @@ extension EditorViewController {
                     if let image = UIImage(contentsOfFile: imageURL.path)?.scaleSuitableSize()?.normalizedImage() {
                         DispatchQueue.main.async {
                             if !self.isTransitionCompletion {
-                                self.loadAssetStatus = .successful(.image(image))
+                                self.loadAssetStatus = .succeed(.image(image))
                                 return
                             }
                             self.editorView.setImage(image)
@@ -836,7 +832,7 @@ extension EditorViewController {
                             DispatchQueue.global().async {
                                 self.loadThumbnailImage(image, viewSize: viewSize)
                             }
-                            ProgressHUD.hide(forView: self.view, animated: true)
+                            PhotoManager.HUDView.dismiss(delay: 0, animated: true, for: self.view)
                         }
                         return
                     }
@@ -846,7 +842,7 @@ extension EditorViewController {
                     self.loadAssetStatus = .failure
                     return
                 }
-                ProgressHUD.hide(forView: self.view, animated: true)
+                PhotoManager.HUDView.dismiss(delay: 0, animated: true, for: self.view)
                 self.loadFailure(message: .textManager.editor.photoLoadFailedAlertMessage.text)
             }
         }
@@ -862,7 +858,7 @@ extension EditorViewController {
             return
         }
         if isTransitionCompletion {
-            assetLoadingView = ProgressHUD.showLoading(addedTo: view, animated: true)
+            assetLoadingView = PhotoManager.HUDView.show(with: nil, delay: 0, animated: true, addedTo: view)
             bringViews()
         }else {
             loadAssetStatus = .loadding(true)
@@ -872,20 +868,19 @@ extension EditorViewController {
             deliveryMode: .highQualityFormat
         ) { [weak self] (_, requestID) in
             self?.assetRequestID = requestID
-            self?.assetLoadingView?.mode = .circleProgress
-            self?.assetLoadingView?.text = .textManager.editor.iCloudSyncHudTitle.text + "..."
+            self?.assetLoadingView?.setText(.textManager.editor.iCloudSyncHudTitle.text + "...")
         } progressHandler: { [weak self] (_, progress) in
             if progress > 0 {
-                self?.assetLoadingView?.progress = CGFloat(progress)
+                self?.assetLoadingView?.setProgress(CGFloat(progress))
             }
         } success: { [weak self] _, avAsset, _ in
             guard let self = self else { return }
             self.assetLoadingView = nil
             if !self.isTransitionCompletion {
-                self.loadAssetStatus = .successful(.videoAsset(avAsset))
+                self.loadAssetStatus = .succeed(.videoAsset(avAsset))
                 return
             }
-            ProgressHUD.hide(forView: self.view, animated: false)
+            PhotoManager.HUDView.dismiss(delay: 0, animated: false, for: self.view)
             let image = avAsset.getImage(at: 0.1)
             self.editorView.setAVAsset(avAsset, coverImage: image)
             self.editorView.loadVideo(isPlay: false)
@@ -898,7 +893,7 @@ extension EditorViewController {
                 self.loadAssetStatus = .failure
                 return
             }
-            ProgressHUD.hide(forView: self.view, animated: false)
+            PhotoManager.HUDView.dismiss(delay: 0, animated: false, for: self.view)
             guard let info = info else {
                 self.loadFailure(message: .textManager.editor.videoLoadFailedAlertMessage.text)
                 return

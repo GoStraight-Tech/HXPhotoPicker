@@ -10,32 +10,32 @@ import AVFoundation
 
 // MARK: 相机配置类
 #if !targetEnvironment(macCatalyst)
-public struct CameraConfiguration: IndicatorTypeConfig {
+public struct CameraConfiguration: IndicatorTypeConfig, PhotoHUDConfig {
     
     /// 图片资源
-    public var imageResource: HX.ImageResource.Camera {
-        HX.ImageResource.shared.camera
-    }
+    public var imageResource: HX.ImageResource { HX.ImageResource.shared }
     
     /// 文本管理
-    public var textManager: HX.TextManager.Camera {
-        HX.TextManager.shared.camera
-    }
+    public var textManager: HX.TextManager { HX.TextManager.shared }
     
     public var modalPresentationStyle: UIModalPresentationStyle
     
     /// If the built-in language is not enough, you can add a custom language text
-    /// PhotoManager.shared.customLanguages - custom language array
-    /// PhotoManager.shared.fixedCustomLanguage - If there are multiple custom languages, one can be fixed to display
+    /// customLanguages - custom language array
     /// 如果自带的语言不够，可以添加自定义的语言文字
-    /// PhotoManager.shared.customLanguages - 自定义语言数组
-    /// PhotoManager.shared.fixedCustomLanguage - 如果有多种自定义语言，可以固定显示某一种
+    /// customLanguages - 自定义语言数组
     public var languageType: LanguageType = .system {
         didSet {
             #if HXPICKER_ENABLE_EDITOR
             editor.languageType = languageType
             #endif
         }
+    }
+    
+    /// 自定义语言
+    public var customLanguages: [CustomLanguage] {
+        get { PhotoManager.shared.customLanguages }
+        set { PhotoManager.shared.customLanguages = newValue }
     }
     
     /// hide status bar
@@ -64,6 +64,9 @@ public struct CameraConfiguration: IndicatorTypeConfig {
     /// After the photo is completed, save it to the system album
     /// 拍照完成后保存到系统相册
     public var isSaveSystemAlbum: Bool = false
+    
+    /// 保存到自定义相册的类型
+    public var saveSystemAlbumType: AssetSaveUtil.AlbumType = .displayName
     
     /// 相机类型
     public var cameraType: CameraController.CameraType = .normal
@@ -103,7 +106,14 @@ public struct CameraConfiguration: IndicatorTypeConfig {
     public var takePhotoMode: TakePhotoMode = .press
     
     /// 主题色
-    public var tintColor: UIColor = .systemBlue
+    public var tintColor: UIColor = .systemBlue {
+        didSet {
+            focusColor = tintColor
+        }
+    }
+    
+    /// 聚焦框的颜色
+    public var focusColor: UIColor = .systemBlue
     
     /// 摄像头最大缩放比例
     public var videoMaxZoomScale: CGFloat = 6
