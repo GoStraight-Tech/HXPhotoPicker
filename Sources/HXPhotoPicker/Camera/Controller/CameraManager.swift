@@ -235,6 +235,8 @@ extension CameraManager {
         with position: AVCaptureDevice.Position = .unspecified
     ) -> AVCaptureDevice.DiscoverySession {
         let deviceTypes: [AVCaptureDevice.DeviceType] = [
+            .builtInDualWideCamera,
+            .builtInDualCamera,
             .builtInWideAngleCamera
         ]
         return AVCaptureDevice.DiscoverySession(
