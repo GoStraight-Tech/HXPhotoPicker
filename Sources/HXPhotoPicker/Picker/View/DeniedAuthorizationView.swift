@@ -115,12 +115,12 @@ public class DeniedAuthorizationView: UIView, PhotoDeniedAuthorization {
         var barY: CGFloat = 0
         if let pickerController = viewController as? PhotoPickerController {
             barHeight = pickerController.navigationBar.height
-            if pickerController.modalPresentationStyle == .fullScreen {
+            if pickerController.modalPresentationStyle == .overFullScreen {
                 barY = UIDevice.statusBarHeight
             }
         }else if let splitVC = viewController as? PhotoSplitViewController {
             barHeight = splitVC.photoController.navigationBar.height
-            if splitVC.photoController.modalPresentationStyle == .fullScreen {
+            if splitVC.photoController.modalPresentationStyle == .overFullScreen {
                 barY = UIDevice.statusBarHeight
             }
         }
