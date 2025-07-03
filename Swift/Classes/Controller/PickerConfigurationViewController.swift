@@ -29,6 +29,11 @@ class PickerConfigurationViewController: UITableViewController {
             target: self,
             action: #selector(openPickerController)
         )
+        #if targetEnvironment(simulator)
+        self.config.selectOptions = [.photo, .gifPhoto, .livePhoto, .video]
+        #else
+        self.config.selectOptions = [.photo, .gifPhoto, .livePhoto, .HDRPhoto, .video]
+        #endif
     }
     
     @objc func openPickerController() {
@@ -330,7 +335,9 @@ extension PickerConfigurationViewController {
             "russian",
             "german",
             "french",
-            "Arabic"
+            "Arabic",
+            "Spanish",
+            "Portuguese"
         ]
         for title in titles {
             alert.addAction(UIAlertAction.init(title: title, style: .default, handler: { [weak self] (action) in
@@ -403,6 +410,33 @@ extension PickerConfigurationViewController {
             self.config.selectOptions = [.gifPhoto, .livePhoto, .video]
             self.tableView.reloadRows(at: [indexPath], with: .fade)
         }))
+        #if targetEnvironment(simulator)
+        alert.addAction(
+            UIAlertAction(title: "photo+gif+livephoto", style: .default, handler: { [weak self] (action) in
+            guard let self = self else { return }
+            self.config.selectOptions = [.photo, .gifPhoto, .livePhoto]
+            self.tableView.reloadRows(at: [indexPath], with: .fade)
+        }))
+        alert.addAction(
+            UIAlertAction(title: "photo+gif+livephoto+video", style: .default, handler: { [weak self] (action) in
+            guard let self = self else { return }
+            self.config.selectOptions = [.photo, .gifPhoto, .livePhoto, .video]
+            self.tableView.reloadRows(at: [indexPath], with: .fade)
+        }))
+        #else
+        alert.addAction(
+            UIAlertAction(title: "photo+gif+livephoto+HDR", style: .default, handler: { [weak self] (action) in
+            guard let self = self else { return }
+            self.config.selectOptions = [.photo, .gifPhoto, .livePhoto, .HDRPhoto]
+            self.tableView.reloadRows(at: [indexPath], with: .fade)
+        }))
+        alert.addAction(
+            UIAlertAction(title: "photo+gif+livephoto+HDR+video", style: .default, handler: { [weak self] (action) in
+            guard let self = self else { return }
+            self.config.selectOptions = [.photo, .gifPhoto, .livePhoto, .HDRPhoto, .video]
+            self.tableView.reloadRows(at: [indexPath], with: .fade)
+        }))
+        #endif
         alert.addAction(UIAlertAction.init(title: "取消", style: .cancel, handler: nil))
         presendAlert(alert)
     }
@@ -940,6 +974,10 @@ extension LanguageType {
             return "法语"
         case .arabic:
             return "阿拉伯"
+        case .spanish:
+            return "西班牙"
+        case .portuguese:
+            return "葡萄牙"
         case .custom:
             return "自定义"
         }
@@ -978,6 +1016,12 @@ extension PickerAssetOptions {
         if self == [.photo, .livePhoto, .video] || self == [.livePhoto, .video] {
             return "photo+livePhoto+video"
         }
+        if self == [.photo, .gifPhoto, .livePhoto] {
+            return "photo+gif+livePhoto"
+        }
+        if self == [.photo, .gifPhoto, .livePhoto, .HDRPhoto] {
+            return "photo+gif+livePhoto+HDRPhoto"
+        }
         if self == [.photo, .gifPhoto] {
             return "photo+gif"
         }
@@ -986,6 +1030,12 @@ extension PickerAssetOptions {
         }
         if self == [.photo, .video] {
             return "photo+video"
+        }
+        if self == [.photo, .gifPhoto, .livePhoto, .HDRPhoto] {
+            return "photo+gifPhoto+livePhoto+HDRPhoto"
+        }
+        if self == [.photo, .gifPhoto, .livePhoto, .HDRPhoto, .video] {
+            return "photo+gifPhoto+livePhoto+HDRPhoto+video"
         }
         switch self {
         case .photo:
@@ -1076,6 +1126,10 @@ extension LanguageType {
             return .french
         case 12:
             return .arabic
+        case 13:
+            return .spanish
+        case 14:
+            return .portuguese
         default:
             return .system
         }

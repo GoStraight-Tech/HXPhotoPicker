@@ -37,7 +37,11 @@ extension PhotoPickerViewController: EditorViewControllerDelegate {
                     }
                 }
             }else {
-                listView.reloadCell(for: photoAsset)
+                if pickerController.pickerData.canSelect(photoAsset, isShowHUD: true) {
+                    listView.reloadCell(for: photoAsset)
+                }else {
+                    deselectedAsset(photoAsset)
+                }
             }
             photoToolbar.selectedAssetDidChanged(pickerController.selectedAssetArray)
             finishItem?.selectedAssetDidChanged(pickerController.selectedAssetArray)
@@ -67,6 +71,10 @@ extension PhotoPickerViewController: EditorViewControllerDelegate {
                 photoToolbar.selectedAssetDidChanged(pickerController.selectedAssetArray)
                 finishItem?.selectedAssetDidChanged(pickerController.selectedAssetArray)
                 requestSelectedAssetFileSize()
+            }else {
+                if !pickerController.pickerData.canSelect(photoAsset, isShowHUD: true) {
+                    deselectedAsset(photoAsset)
+                }
             }
             if listView.filterOptions.contains(.edited) {
                 listView.reloadData()
@@ -82,12 +90,8 @@ extension PhotoPickerViewController: EditorViewControllerDelegate {
         loadTitleChartlet response: @escaping EditorTitleChartletResponse
     ) {
         guard let pickerDelegate = pickerController.pickerDelegate else {
-            #if canImport(Kingfisher)
             let titles = PhotoTools.defaultTitleChartlet()
             response(titles)
-            #else
-            response([])
-            #endif
             return
         }
         pickerDelegate.pickerController(
@@ -104,12 +108,8 @@ extension PhotoPickerViewController: EditorViewControllerDelegate {
         loadChartletList response: @escaping EditorChartletListResponse
     ) {
         guard let pickerDelegate = pickerController.pickerDelegate else {
-            #if canImport(Kingfisher)
             let chartletList = PhotoTools.defaultNetworkChartlet()
             response(titleIndex, chartletList)
-            #else
-            response(titleIndex, [])
-            #endif
             return
         }
         pickerDelegate.pickerController(

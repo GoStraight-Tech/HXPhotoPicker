@@ -40,8 +40,7 @@ public extension PhotoAsset {
         completion: @escaping AssetURLCompletion
     ) {
         if mediaType == .photo {
-            if mediaSubType == .livePhoto ||
-                mediaSubType == .localLivePhoto {
+            if mediaSubType.isLivePhoto {
                 getLivePhotoURL(
                     imageFileURL: fileConfig?.imageURL,
                     videoFileURL: fileConfig?.videoURL,
@@ -82,14 +81,12 @@ public extension PhotoAsset {
         compressionQuality: CGFloat? = nil,
         completion: @escaping AssetURLCompletion
     ) {
-        #if canImport(Kingfisher)
         if isNetworkAsset {
             getNetworkImageURL(
                 resultHandler: completion
             )
             return
         }
-        #endif
         requestImageURL(
             toFile: fileURL,
             compressionQuality: compressionQuality,
@@ -221,7 +218,7 @@ public extension PhotoAsset {
         }
         group.notify(queue: .main) {
             if let image = image, let urlResult = urlResult {
-                completion(.success(.init(image: image, urlReuslt: urlResult)))
+                completion(.success(.init(image: image, urlReuslt: urlResult, photoAsset: self)))
             }else {
                 completion(.failure(error))
             }
@@ -292,6 +289,16 @@ public extension PhotoAsset {
             self.imageTarget = imageTarget
             self.videoExportParameter = videoExportParameter
             self.imageCompressionQuality = nil
+        }
+        
+        public static var `default`: Compression {
+            .init(
+                imageCompressionQuality: 0.5,
+                videoExportParameter: .init(
+                    preset: .ratio_960x540,
+                    quality: 6
+                )
+            )
         }
         
         public struct ImageTarget {

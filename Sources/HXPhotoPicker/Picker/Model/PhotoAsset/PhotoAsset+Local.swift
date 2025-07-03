@@ -154,11 +154,9 @@ extension PhotoAsset {
         }
         if mediaType == .photo {
             if isNetworkAsset {
-                #if canImport(Kingfisher)
-                getNetworkImage(urlType: urlType) { (image) in
+                getNetworkImage(urlType: urlType) { image, _ in
                     resultHandler(image, self)
                 }
-                #endif
                 return
             }
             if urlType == .thumbnail,
@@ -167,15 +165,15 @@ extension PhotoAsset {
                 return
             }
             var image: UIImage?
-            if let img = localImageAsset?.image {
+            if let img = localImageAsset?.image?.normalizedImage() {
                 image = img
             }else  if let imageURL = localImageAsset?.imageURL,
-               let img = UIImage(contentsOfFile: imageURL.path) {
+                      let img = UIImage(contentsOfFile: imageURL.path)?.normalizedImage() {
                 localImageAsset?.image = img
                 image = img
             }else if let imageURL = localLivePhoto?.imageURL,
                      imageURL.isFileURL,
-                     let img = UIImage(contentsOfFile: imageURL.path) {
+                     let img = UIImage(contentsOfFile: imageURL.path)?.normalizedImage() {
                 image = img
            }
             if let image = image, urlType == .thumbnail {
@@ -357,16 +355,9 @@ extension PhotoAsset {
                 return
             }else {
                 if self.isNetworkAsset {
-                    #if canImport(Kingfisher)
-                    self.getNetworkImage {  (image) in
-                        var imageData: Data?
-                        if let data = image?.kf.gifRepresentation() {
-                            imageData = data
-                        }else if let data = PhotoTools.getImageData(for: image) {
-                            imageData = data
-                        }
-                        if let imageData = imageData,
-                            let image = image {
+                    self.getNetworkImage {  image, imageData in
+                        let imageData = imageData ?? PhotoTools.getImageData(for: image)
+                        if let imageData, let image = image {
                             resultSuccess(
                                 data: imageData,
                                 orientation: image.imageOrientation,
@@ -376,7 +367,6 @@ extension PhotoAsset {
                             resultFailed(error: .invalidData)
                         }
                     }
-                    #endif
                     return
                 }
                 resultFailed(error: .invalidData)

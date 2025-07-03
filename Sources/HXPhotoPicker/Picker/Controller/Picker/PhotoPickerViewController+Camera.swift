@@ -35,12 +35,12 @@ extension PhotoPickerViewController: UIImagePickerControllerDelegate, UINavigati
             }
             camerConfig.languageType = pickerController.config.languageType
             camerConfig.isSaveSystemAlbum = false
+            camerConfig.isAutoBack = false
             let vc = CameraController(
                 config: camerConfig,
                 type: type,
                 delegate: self
             )
-            vc.autoDismiss = false
             present(vc, animated: true)
             return
         default:
@@ -191,6 +191,7 @@ extension PhotoPickerViewController: UIImagePickerControllerDelegate, UINavigati
         ) {
             switch $0 {
             case .success(let phAsset):
+                PhotoManager.shared.pickerCaptureTime = Date().timeIntervalSince1970
                 self.addedCameraPhotoAsset(
                     PhotoAsset(asset: phAsset),
                     isCapture: isCapture,
@@ -252,6 +253,7 @@ extension PhotoPickerViewController: CameraControllerDelegate {
     public func cameraController(
         _ cameraController: CameraController,
         didFinishWithResult result: CameraController.Result,
+        phAsset: PHAsset?,
         location: CLLocation?
     ) {
         var didDismiss: Bool

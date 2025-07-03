@@ -18,6 +18,9 @@ protocol PhotoPreviewViewCellDelegate: AnyObject {
     func cell(requestFailed cell: PhotoPreviewViewCell)
     func photoCell(networkImagedownloadSuccess photoCell: PhotoPreviewViewCell)
     func photoCell(networkImagedownloadFailed photoCell: PhotoPreviewViewCell)
+    func photoCell(_ photoCell: PhotoPreviewViewCell, HDRDidDisabled isDisabled: Bool)
+    func photoCell(_ photoCell: PhotoPreviewViewCell, livePhotoDidDisabled isDisabled: Bool)
+    func photoCell(_ photoCell: PhotoPreviewViewCell, livePhotoDidMuted isMuted: Bool)
 }
 
 open class PhotoPreviewViewCell: UICollectionViewCell, UIScrollViewDelegate {
@@ -33,6 +36,7 @@ open class PhotoPreviewViewCell: UICollectionViewCell, UIScrollViewDelegate {
     public var imageView: UIImageView { scrollContentView.imageView }
     public func showScrollContainerSubview() { scrollContentView.showOtherSubview() }
     public func hideScrollContainerSubview() { scrollContentView.hiddenOtherSubview() }
+    public var previewType: PhotoPreviewType = .none
     
     weak var delegate: PhotoPreviewViewCellDelegate?
     

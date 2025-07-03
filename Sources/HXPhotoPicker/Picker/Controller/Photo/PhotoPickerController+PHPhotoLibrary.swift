@@ -12,7 +12,7 @@ import Photos
 extension PhotoPickerController: PHPhotoLibraryChangeObserver {
     
     public func photoLibraryDidChange(_ changeInstance: PHChange) {
-        if !AssetPermissionsUtil.isLimitedAuthorizationStatus || !config.allowLoadPhotoLibrary {
+        if !config.allowLoadPhotoLibrary {
             return
         }
         var needReload = false
@@ -32,42 +32,60 @@ extension PhotoPickerController: PHPhotoLibraryChangeObserver {
                     for: changeInstance,
                     assetCollection: assetCollection
                 )
-                if !needReload {
+                if !needReload, assetCollection.isSelected {
                     needReload = hasChanges
                 }
             }
         }
         if needReload {
             DispatchQueue.main.async {
-                if self.fetchData.cameraAssetCollection?.result == nil {
+                if self.fetchData.cameraAssetCollection?.collection == nil {
                     self.fetchData.fetchCameraAssetCollection()
                 }else {
-                    self.reloadData(assetCollection: nil)
+                    let captureTime = PhotoManager.shared.pickerCaptureTime
+                    if captureTime > 0 {
+                        let time = Date().timeIntervalSince1970 - captureTime
+                        if time > 1 {
+                            self.reloadData(assetCollection: nil)
+                        }
+                        PhotoManager.shared.pickerCaptureTime = 0
+                    }else {
+                        self.reloadData(assetCollection: nil)
+                    }
                 }
-                self.fetchData.fetchAssetCollections()
             }
         }
     }
+    
     private func resultHasChanges(
         for changeInstance: PHChange,
         assetCollection: PhotoAssetCollection
     ) -> Bool {
-        if assetCollection.result == nil {
+        guard let result = assetCollection.result else {
             if assetCollection == self.fetchData.cameraAssetCollection {
                 return true
             }
             return false
         }
-        let changeResult: PHFetchResultChangeDetails? = changeInstance.changeDetails(
-            for: assetCollection.result!
-        )
-        if let changeResult = changeResult, !changeResult.hasIncrementalChanges {
-            let result = changeResult.fetchResultAfterChanges
-            assetCollection.updateResult(for: result)
-            if assetCollection == self.fetchData.cameraAssetCollection && result.count == 0 {
+        if let changeResult  = changeInstance.changeDetails(for: result) {
+            if changeResult.hasIncrementalChanges {
+                if changeResult.insertedObjects.isEmpty && changeResult.removedObjects.isEmpty && !changeResult.hasMoves {
+                    return false
+                }
+            }
+            let fetchAssetCollection = fetchData.config.fetchAssetCollection
+            fetchAssetCollection.enumerateAllAlbums(options: nil) { collection, _, stop in
+                if collection.localIdentifier == assetCollection.collection?.localIdentifier {
+                    assetCollection.collection = collection
+                    stop.initialize(to: true)
+                }
+            }
+            assetCollection.result = changeResult.fetchResultAfterChanges
+            assetCollection.count = changeResult.fetchResultAfterChanges.count
+            if assetCollection.count == 0 {
                 assetCollection.update(
                     albumName: .textManager.picker.albumList.emptyAlbumName.text,
-                    coverImage: self.config.emptyCoverImageName.image
+                    coverImage: config.emptyCoverImageName.image
                 )
             }
             return true
