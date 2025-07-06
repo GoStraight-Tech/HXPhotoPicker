@@ -9,7 +9,7 @@ import UIKit
 
 // MARK: PhotoPreviewViewControllerDelegate
 extension PhotoPickerViewController: PhotoPreviewViewControllerDelegate {
-
+    
     func pushPreviewViewController(
         previewAssets: [PhotoAsset],
         currentPreviewIndex: Int,
@@ -80,22 +80,9 @@ extension PhotoPickerViewController: PhotoPreviewViewControllerDelegate {
             }
         }
         listView.updateCellSelectedTitle()
+        photoToolbar.selectedAssetDidChanged(pickerController.selectedAssetArray)
         finishItem?.selectedAssetDidChanged(pickerController.selectedAssetArray)
-        if isShowToolbar {
-            photoToolbar.selectedAssetDidChanged(pickerController.selectedAssetArray)
-            requestSelectedAssetFileSize()
-        }
-    }
-    
-    func previewViewController(
-        _ previewController: PhotoPreviewViewController,
-        updatePhotoAsset photoAsset: PhotoAsset,
-        at index: Int
-    ) {
-        listView.updateCell(for: photoAsset)
-        if isShowToolbar {
-            requestSelectedAssetFileSize()
-        }
+        requestSelectedAssetFileSize()
     }
     
     func previewViewController(
@@ -106,11 +93,9 @@ extension PhotoPickerViewController: PhotoPreviewViewControllerDelegate {
             cell.requestThumbnailImage()
         }
         if photoAsset.isSelected {
+            photoToolbar.selectedAssetDidChanged(pickerController.selectedAssetArray)
             finishItem?.selectedAssetDidChanged(pickerController.selectedAssetArray)
-            if isShowToolbar {
-                photoToolbar.selectedAssetDidChanged(pickerController.selectedAssetArray)
-                requestSelectedAssetFileSize()
-            }
+            requestSelectedAssetFileSize()
         }
     }
     
@@ -157,14 +142,14 @@ extension PhotoPickerViewController: PhotoPreviewViewControllerDelegate {
         editAssetFinished photoAsset: PhotoAsset
     ) {
         listView.reloadCell(for: photoAsset)
+        photoToolbar.selectedAssetDidChanged(pickerController.selectedAssetArray)
         finishItem?.selectedAssetDidChanged(pickerController.selectedAssetArray)
+        requestSelectedAssetFileSize()
         if listView.filterOptions.contains(.edited) {
             listView.reloadData()
         }
         if isShowToolbar {
             photoToolbar.reloadSelectedAsset(photoAsset)
-            photoToolbar.selectedAssetDidChanged(pickerController.selectedAssetArray)
-            requestSelectedAssetFileSize()
         }
     }
     

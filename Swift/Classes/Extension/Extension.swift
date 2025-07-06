@@ -8,6 +8,10 @@
 
 import UIKit
 
+#if canImport(Kingfisher)
+import Kingfisher
+#endif
+
 extension UIView {
     var x: CGFloat {
         get { frame.origin.x }
@@ -78,6 +82,15 @@ extension UIView {
         }
         return nil
     }
+}
+
+extension URL {
+    
+    #if canImport(Kingfisher)
+    var isCache: Bool {
+        ImageCache.default.isCached(forKey: cacheKey)
+    }
+    #endif
 }
 
 extension FileManager {

@@ -218,7 +218,7 @@ public extension PhotoTools {
         }
         return nil
     }
-    static func getImageData(_ image: UIImage, isHEIC: Bool = false, isJPEG: Bool = false, compressionQuality: CGFloat = 0.5, queueLabel: String, completion: @escaping (Data?) -> Void) {
+    static func getImageData(_ image: UIImage, isHEIC: Bool = false, queueLabel: String, completion: @escaping (Data?) -> Void) {
         let serialQueue = DispatchQueue(
             label: queueLabel,
             qos: .userInitiated,
@@ -228,22 +228,11 @@ public extension PhotoTools {
         )
         serialQueue.async {
             autoreleasepool {
-                var data: Data?
                 if isHEIC {
-                    if #available(iOS 17.0, *) {
-                        if let _data = image.heicData() {
-                            data = _data
-                        }else if let _data = image.jpegData(compressionQuality: 0.5) {
-                            data = _data
-                        }
-                    } else {
-                        data = image.jpegData(compressionQuality: 0.5)
+                    guard let data = image.jpegData(compressionQuality: 0.5) else {
+                        completion(nil)
+                        return
                     }
-                }
-                if isJPEG {
-                    data = image.jpegData(compressionQuality: compressionQuality)
-                }
-                if let data = data {
                     completion(data)
                     return
                 }

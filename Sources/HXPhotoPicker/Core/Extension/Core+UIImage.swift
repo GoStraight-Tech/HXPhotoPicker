@@ -49,7 +49,7 @@ extension UIImage {
     }
     
     func scaleToFillSize(size: CGSize, mode: HX.ImageTargetMode = .fill, scale: CGFloat = 0) -> UIImage? {
-        if self.size == size {
+        if __CGSizeEqualToSize(self.size, size) {
             return self
         }
         let rect: CGRect
@@ -75,25 +75,15 @@ extension UIImage {
             if mode == .fit {
                 rect = CGRect(origin: .zero, size: size)
             }else {
-                var x: CGFloat = 0
-                var y: CGFloat = 0
                 let scale = size.width / width
-                var scaleWidth = size.width
                 var scaleHeight = scale * height
                 if scaleHeight < size.height {
-                    scaleWidth = size.height / scaleHeight * scaleWidth
                     scaleHeight = size.height
                 }
-                if scaleWidth < size.width {
-                    scaleHeight = size.width / scaleWidth * scaleHeight
-                    scaleWidth = size.width
-                }
-                x = -(scaleWidth - size.width) / 2
-                y = -(scaleHeight - size.height) / 2
                 rect = CGRect(
-                    x: x,
-                    y: y,
-                    width: scaleWidth,
+                    x: 0,
+                    y: -(scaleHeight - size.height) / 2,
+                    width: size.width,
                     height: scaleHeight
                 )
             }
@@ -297,9 +287,9 @@ extension UIImage {
         }
         return self
     }
-    func merge(_ image: UIImage, origin: CGPoint, opaque: Bool = false, isJPEG: Bool = false, scale: CGFloat = UIScreen._scale) -> UIImage? {
+    func merge(_ image: UIImage, origin: CGPoint, scale: CGFloat = UIScreen._scale) -> UIImage? {
         let format = UIGraphicsImageRendererFormat()
-        format.opaque = opaque
+        format.opaque = false
         format.scale = scale
         let renderer = UIGraphicsImageRenderer(size: size, format: format)
         let mergeImage = renderer.image { context in
@@ -307,32 +297,14 @@ extension UIImage {
         }
         return mergeImage
     }
-    func merge(
-        images: [UIImage],
-        opaque: Bool = false,
-        isJPEG: Bool = false,
-        compressionQuality: CGFloat = 1,
-        scale: CGFloat = UIScreen._scale
-    ) -> UIImage? {
+    func merge(images: [UIImage], scale: CGFloat = UIScreen._scale) -> UIImage? {
         if images.isEmpty {
             return self
         }
         let format = UIGraphicsImageRendererFormat()
-        format.opaque = opaque
+        format.opaque = false
         format.scale = scale
-        if #available(iOS 12.0, *) {
-            format.preferredRange = .standard
-        }
         let renderer = UIGraphicsImageRenderer(size: size, format: format)
-        if isJPEG {
-            let data = renderer.jpegData(withCompressionQuality: compressionQuality) { context in
-                draw(in: CGRect(origin: .zero, size: size))
-                for image in images {
-                    image.draw(in: CGRect(origin: .zero, size: size))
-                }
-            }
-            return .init(data: data)
-        }
         let mergeImage = renderer.image { context in
             draw(in: CGRect(origin: .zero, size: size))
             for image in images {
@@ -364,9 +336,6 @@ extension UIImage {
         let format = UIGraphicsImageRendererFormat()
         format.opaque = false
         format.scale = _scale
-        if #available(iOS 12.0, *) {
-            format.preferredRange = .standard
-        }
         let renderer = UIGraphicsImageRenderer(size: images.first!.size, format: format)
         let mergeImage = renderer.image { context in
             for image in images {
@@ -386,57 +355,5 @@ extension UIImage {
             layer.render(in: context.cgContext)
         }
         return image
-    }
-    
-    static func HDRDecoded(_ data: Data) -> UIImage? {
-        guard let sourceRef = CGImageSourceCreateWithData(data as CFData, nil) else {
-            return nil
-        }
-        let properties = CGImageSourceCopyPropertiesAtIndex(sourceRef, 0, nil) as? [AnyHashable: Any]
-        let exifOrientation = {
-            guard let orientation = properties?[kCGImagePropertyOrientation] as? UInt32 else {
-                return CGImagePropertyOrientation.up
-            }
-            return CGImagePropertyOrientation(rawValue: orientation) ?? .up
-        }()
-        
-        var decodingOptions: [AnyHashable: Any] = [
-            kCGImageSourceShouldCacheImmediately: false
-        ]
-        if #available(macOS 14, iOS 17, tvOS 17, watchOS 10, *) {
-            decodingOptions[kCGImageSourceDecodeRequest] = kCGImageSourceDecodeToHDR
-        }
-        guard let imageRef = CGImageSourceCreateImageAtIndex(sourceRef, 0, decodingOptions as CFDictionary) else {
-            return nil
-        }
-        
-        let image = UIImage(cgImage: imageRef, scale: 1.0, orientation: exifOrientation.imageOrientation)
-        return image
-    }
-    
-}
-
-extension CGImagePropertyOrientation {
-    var imageOrientation: UIImage.Orientation {
-        switch self {
-        case .up:
-            return .up
-        case .upMirrored:
-            return .upMirrored
-        case .down:
-            return .down
-        case .downMirrored:
-            return .downMirrored
-        case .left:
-            return .left
-        case .leftMirrored:
-            return .leftMirrored
-        case .right:
-            return .right
-        case .rightMirrored:
-            return .rightMirrored
-        default:
-            return .up
-        }
     }
 }

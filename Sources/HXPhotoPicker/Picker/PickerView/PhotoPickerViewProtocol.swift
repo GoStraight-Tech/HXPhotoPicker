@@ -6,6 +6,9 @@
 //
 
 import UIKit
+#if canImport(Kingfisher)
+import Kingfisher
+#endif
 
 public protocol PhotoPickerViewDelegate: AnyObject {
     
@@ -268,8 +271,12 @@ public extension PhotoPickerViewDelegate {
         loadTitleChartlet editorViewController: EditorViewController,
         response: @escaping EditorTitleChartletResponse
     ) {
+        #if canImport(Kingfisher)
         let titles = PhotoTools.defaultTitleChartlet()
         response(titles)
+        #else
+        response([])
+        #endif
     }
     func photoPickerView(
         _ photoPickerView: PhotoPickerView,
@@ -279,8 +286,12 @@ public extension PhotoPickerViewDelegate {
         response: @escaping EditorChartletListResponse
     ) {
         /// 默认加载这些贴图
+        #if canImport(Kingfisher)
         let chartletList = PhotoTools.defaultNetworkChartlet()
         response(titleIndex, chartletList)
+        #else
+        response(titleIndex, [])
+        #endif
     }
     func photoPickerView(
         _ photoPickerView: PhotoPickerView,

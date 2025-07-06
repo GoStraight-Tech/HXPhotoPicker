@@ -44,14 +44,13 @@ public class PhotoAlbumHeaderView: UITableViewHeaderFooterView {
     public override func layoutSubviews() {
         super.layoutSubviews()
         
-        titleLb.height = contentView.height
-        titleLb.width = titleLb.textWidth
+        titleLb.x = 15
         titleLb.centerY = contentView.height / 2
-        titleLb.hxPicker_x = 15
+        titleLb.size = contentView.size
         
         if let btnWidth = allBtn.titleLabel?.textWidth {
             allBtn.size = .init(width: btnWidth, height: contentView.height)
-            allBtn.hxPicker_x = contentView.width - 15 - btnWidth
+            allBtn.x = contentView.width - 15 - btnWidth
         }
     }
     

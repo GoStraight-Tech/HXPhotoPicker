@@ -6,18 +6,25 @@
 //
 
 import UIKit
+#if canImport(Kingfisher)
+import Kingfisher
+#endif
 
 class EditorChartletViewCell: UICollectionViewCell {
     private var selectedBgView: UIVisualEffectView!
     
-    var imageView: HXImageViewProtocol!
+    var imageView: ImageView!
     var editorType: EditorContentViewType = .image
     var downloadCompletion = false
     
     var titleChartlet: EditorChartletTitle! {
         didSet {
             selectedBgView.isHidden = !titleChartlet.isSelected
+            #if canImport(Kingfisher)
             setupImage(image: titleChartlet.image, url: titleChartlet.url)
+            #else
+            setupImage(image: titleChartlet.image)
+            #endif
         }
     }
     
@@ -37,27 +44,57 @@ class EditorChartletViewCell: UICollectionViewCell {
     var chartlet: EditorChartlet! {
         didSet {
             selectedBgView.isHidden = true
+            #if canImport(Kingfisher)
             setupImage(image: chartlet.image, url: chartlet.url)
+            #else
+            setupImage(image: chartlet.image)
+            #endif
         }
     }
     
     func setupImage(image: UIImage?, url: URL? = nil) {
         downloadCompletion = false
         imageView.image = nil
+        #if canImport(Kingfisher)
         if let image = image {
             imageView.image = image
             downloadCompletion = true
         }else if let url = url {
-            let options: ImageDownloadOptionsInfo
+            imageView.kf.indicatorType = .activity
+            (imageView.kf.indicator?.view as? UIActivityIndicatorView)?.color = .white
+            let processor = DownsamplingImageProcessor(
+                size: CGSize(
+                    width: width * 2,
+                    height: height * 2
+                )
+            )
+            let options: KingfisherOptionsInfo
             if url.isGif && editorType == .video {
-                options = [.memoryCacheExpirationExpired]
+                options = [.memoryCacheExpiration(.expired)]
             }else {
-                options = [.cacheOriginalImage, .imageProcessor(CGSize(width: width * 2, height: height * 2))]
+                options = [
+                    .cacheOriginalImage,
+                    .processor(processor),
+                    .backgroundDecode
+                ]
             }
-            imageView.setImage(with: .init(downloadURL: url, indicatorColor: .white), placeholder: nil, options: options, progressHandler: nil) { [weak self] _ in
-                self?.downloadCompletion = true
+            imageView.kf.setImage(
+                with: url,
+                options: options
+            ) { [weak self] result in
+                switch result {
+                case .success:
+                    self?.downloadCompletion = true
+                default:
+                    break
+                }
             }
         }
+        #else
+        if let image = image {
+            imageView.image = image
+        }
+        #endif
     }
     
     override init(frame: CGRect) {
@@ -68,7 +105,7 @@ class EditorChartletViewCell: UICollectionViewCell {
         selectedBgView.layer.cornerRadius = 5
         selectedBgView.layer.masksToBounds = true
         contentView.addSubview(selectedBgView)
-        imageView = PhotoManager.ImageView.init()
+        imageView = ImageView()
         imageView.contentMode = .scaleAspectFit
         contentView.addSubview(imageView)
     }

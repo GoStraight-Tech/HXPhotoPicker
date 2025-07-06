@@ -8,6 +8,9 @@
 
 import UIKit
 import Photos
+#if canImport(Kingfisher)
+import Kingfisher
+#endif
 
 open class PhotoBrowserAnimator: NSObject, PhotoBrowserAnimationTransitioning {
     public let type: PhotoBrowserAnimationTransitionType
@@ -161,33 +164,14 @@ open class PhotoBrowserAnimator: NSObject, PhotoBrowserAnimationTransitioning {
                 transitionContext.completeTransition(true)
             }
         }
-        if let networkImage = photoAsset?.networkImageAsset {
-            var isRequest: Bool = false
-            var isChangeImage: Bool = false
-            if networkImage.imageSize.equalTo(.zero) {
-                isRequest = true
-            }else {
-                if let image = animatedImageView.image {
-                    let networkScale = networkImage.imageSize.width / networkImage.imageSize.height
-                    let imageScale = image.width / image.height
-                    if networkScale != imageScale {
-                        isRequest = true
-                        isChangeImage = true
-                    }
-                }else {
-                    isRequest = true
-                }
-            }
-            if !isRequest {
-                animateHandler()
-                return
-            }
+        #if canImport(Kingfisher)
+        if let networkImage = photoAsset?.networkImageAsset, networkImage.imageSize.equalTo(.zero) {
             requestNetworkImage(networkImage) { [weak self] image in
                 guard let self, let image else {
                     animateHandler()
                     return
                 }
-                if self.animatedImageView.image == nil || isChangeImage {
+                if self.animatedImageView.image == nil {
                     self.animatedImageView.image = image
                 }
                 photoAsset?.networkImageAsset?.imageSize = image.size
@@ -204,6 +188,7 @@ open class PhotoBrowserAnimator: NSObject, PhotoBrowserAnimationTransitioning {
             }
             return
         }
+        #endif
         animateHandler()
     }
     
@@ -228,31 +213,43 @@ open class PhotoBrowserAnimator: NSObject, PhotoBrowserAnimationTransitioning {
         }
     }
     
+    #if canImport(Kingfisher)
     open func requestNetworkImage(_ networkImage: NetworkImageAsset, completion: @escaping(UIImage?) -> Void) {
-        if let cacheKey = networkImage.originalCacheKey,
-           PhotoManager.ImageView.isCached(forKey: cacheKey) {
-            PhotoManager.ImageView.getCacheImage(forKey: cacheKey) { image in
-                guard let image else {
+        if let cacheKey = networkImage.originalURL?.cacheKey,
+           ImageCache.default.isCached(forKey: cacheKey) {
+            ImageCache.default.retrieveImage(
+                forKey: cacheKey,
+                options: [],
+                callbackQueue: .mainAsync
+            ) {
+                switch $0 {
+                case .success(let value):
+                    completion(value.image)
+                default:
                     completion(nil)
-                    return
                 }
-                completion(image)
             }
             return
         }
-        if let cacheKey = networkImage.thumbailCacheKey,
-           PhotoManager.ImageView.isCached(forKey: cacheKey) {
-            PhotoManager.ImageView.getCacheImage(forKey: cacheKey) { image in
-                guard let image else {
+        if let cacheKey = networkImage.thumbnailURL?.cacheKey,
+           ImageCache.default.isCached(forKey: cacheKey) {
+            ImageCache.default.retrieveImage(
+                forKey: cacheKey,
+                options: [],
+                callbackQueue: .mainAsync
+            ) {
+                switch $0 {
+                case .success(let value):
+                    completion(value.image)
+                default:
                     completion(nil)
-                    return
                 }
-                completion(image)
             }
             return
         }
         completion(nil)
     }
+    #endif
     
     open func dismissTransition(_ transitionContext: UIViewControllerContextTransitioning) {
         guard let fromVC = transitionContext.viewController(forKey: .from) as? PhotoPickerController else {

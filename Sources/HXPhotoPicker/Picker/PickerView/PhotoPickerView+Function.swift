@@ -16,7 +16,7 @@ extension PhotoPickerView {
         horizontalLayout = PhotoPickerSwitchLayout()
         horizontalLayout.scrollDirection = .horizontal
         
-        collectionView = HXCollectionView(
+        collectionView = UICollectionView(
             frame: bounds,
             collectionViewLayout: scrollDirection == .vertical ? verticalLayout : horizontalLayout
         )

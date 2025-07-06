@@ -13,8 +13,9 @@ class EditorVideoControlViewCell: UICollectionViewCell {
     
     var image: UIImage? {
         didSet {
-            guard let image else { return }
-            imageView.setImage(image, animated: true)
+            if let image = image {
+                imageView.setImage(image, animated: true)
+            }
         }
     }
     
@@ -23,7 +24,7 @@ class EditorVideoControlViewCell: UICollectionViewCell {
         imageView = UIImageView()
         imageView.clipsToBounds = true
         imageView.contentMode = .scaleAspectFill
-        contentView.addSubview(imageView)
+        addSubview(imageView)
     }
     
     required init?(coder: NSCoder) {

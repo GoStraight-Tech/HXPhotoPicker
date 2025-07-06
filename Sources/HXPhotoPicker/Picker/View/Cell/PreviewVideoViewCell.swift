@@ -35,7 +35,7 @@ open class PreviewVideoViewCell: PhotoPreviewViewCell {
             playButton.size = imageSize
         }
         playButton.alpha = 0
-        contentView.addSubview(playButton)
+        addSubview(playButton)
     }
 
     @objc
@@ -175,14 +175,8 @@ extension PreviewVideoViewCell: PhotoPreviewVideoViewDelegate {
                 self.playButton.alpha = 1
             }
         }
-        if previewType != .browser {
-            if statusBarShouldBeHidden {
-                showToolView()
-            }
-        }else {
-            if !statusBarShouldBeHidden {
-                showToolView()
-            }
+        if !statusBarShouldBeHidden {
+            showToolView()
         }
     }
     

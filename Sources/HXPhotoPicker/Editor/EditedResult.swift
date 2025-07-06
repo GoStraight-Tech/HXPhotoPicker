@@ -72,17 +72,17 @@ public struct VideoEditedData {
     
     /// Screen Adjustment Parameters
     /// 画面调整参数
-    public let filterEdit: EditorFilterEditFator?
+    let filterEdit: EditorFilterEditFator?
     
     /// last filter effect
     /// The corresponding filter will be obtained internally through the delegate
     /// 上一次滤镜效果
     /// 内部会通过 delegate 来获取对应的滤镜
-    public let filter: VideoEditorFilter?
+    let filter: VideoEditorFilter?
     
     /// clipping parameters
     /// 裁剪参数
-    public let cropSize: EditorCropSizeFator?
+    let cropSize: EditorCropSizeFator?
     
     public init(
         music: VideoEditedMusic? = nil,

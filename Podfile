@@ -1,5 +1,5 @@
 source 'https://github.com/CocoaPods/Specs.git'
-platform:ios,'10.0'
+platform:ios,'12.0'
 
 install! 'cocoapods',
 disable_input_output_paths: true,
@@ -10,15 +10,12 @@ use_frameworks!
 target "HXPhotoPickerExample" do
   pod 'HXPhotoPicker', :path => './'
   
-#  pod 'HXPhotoPicker/Kingfisher', :path => './'
-#  pod 'HXPhotoPicker/SDWebImage', :path => './'
-  
 #  pod 'SwiftLint' Run Script "${PODS_ROOT}/SwiftLint/swiftlint"
 #  pod 'GDPerformanceView-Swift'
 #  pod 'GPUImage'
 end
 
 target "SwiftUIExample" do
-#  pod 'HXPhotoPicker', :path => './'
+  pod 'HXPhotoPicker', :path => './'
 end
 

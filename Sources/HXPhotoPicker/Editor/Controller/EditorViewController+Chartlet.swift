@@ -56,8 +56,12 @@ extension EditorViewController: EditorChartletViewControllerDelegate {
                 loadTitleChartlet: response
             )
         }else {
+            #if canImport(Kingfisher)
             let titles = PhotoTools.defaultTitleChartlet()
             response(titles)
+            #else
+            response([])
+            #endif
         }
     }
     func chartletViewController(
@@ -75,8 +79,12 @@ extension EditorViewController: EditorChartletViewControllerDelegate {
             )
         }else {
             // 默认加载这些贴图
+            #if canImport(Kingfisher)
             let chartletList = PhotoTools.defaultNetworkChartlet()
             response(titleIndex, chartletList)
+            #else
+            response(titleIndex, [])
+            #endif
         }
     }
 }

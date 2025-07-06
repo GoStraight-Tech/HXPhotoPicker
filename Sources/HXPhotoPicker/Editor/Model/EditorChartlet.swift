@@ -17,8 +17,10 @@ public struct EditorChartlet {
     
     public let imageData: Data?
     
+    #if canImport(Kingfisher)
     /// 贴图对应的 网络地址（视频支持gif)
     public let url: URL?
+    #endif
     
     public let ext: Any?
     
@@ -30,9 +32,12 @@ public struct EditorChartlet {
         self.image = image
         self.imageData = imageData
         self.ext = ext
+        #if canImport(Kingfisher)
         url = nil
+        #endif
     }
     
+    #if canImport(Kingfisher)
     public init(
         url: URL?,
         ext: Any? = nil
@@ -42,6 +47,7 @@ public struct EditorChartlet {
         image = nil
         imageData = nil
     }
+    #endif
 }
 
 class EditorChartletTitle {
@@ -49,18 +55,24 @@ class EditorChartletTitle {
     /// 标题图标 对应的 UIImage 数据
     let image: UIImage?
     
+    #if canImport(Kingfisher)
     /// 标题图标 对应的 网络地址
     let url: URL?
+    #endif
     
     init(image: UIImage?) {
         self.image = image
+        #if canImport(Kingfisher)
         url = nil
+        #endif
     }
     
+    #if canImport(Kingfisher)
     init(url: URL?) {
         self.url = url
         image = nil
     }
+    #endif
     
     var isSelected = false
     var isLoading = false

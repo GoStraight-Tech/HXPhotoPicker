@@ -8,16 +8,18 @@
 import UIKit
 import Photos
 
+#if canImport(Kingfisher)
+import Kingfisher
+#endif
+
 public protocol PhotoPickerViewCellDelegate: AnyObject {
     func pickerCell(_ cell: PhotoPickerBaseViewCell, didSelectControl isSelected: Bool)
     func pickerCell(videoRequestDurationCompletion cell: PhotoPickerBaseViewCell)
-    func pickerCell(livePhotoContorlDidChange cell: PhotoPickerBaseViewCell)
 }
 
 public extension PhotoPickerViewCellDelegate {
     func pickerCell(_ cell: PhotoPickerBaseViewCell, didSelectControl isSelected: Bool) { }
     func pickerCell(videoRequestDurationCompletion cell: PhotoPickerBaseViewCell) { }
-    func pickerCell(livePhotoContorlDidChange cell: PhotoPickerBaseViewCell) { }
 }
 
 open class PhotoPickerBaseViewCell: UICollectionViewCell {
@@ -27,7 +29,9 @@ open class PhotoPickerBaseViewCell: UICollectionViewCell {
     public var config: PhotoListCellConfiguration = .init() {
         didSet {
             photoView.targetWidth = config.targetWidth
+            #if canImport(Kingfisher)
             photoView.kf_indicatorColor = config.kf_indicatorColor
+            #endif
             configColor()
         }
     }

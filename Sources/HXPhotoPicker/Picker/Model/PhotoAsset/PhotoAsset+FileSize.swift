@@ -83,14 +83,9 @@ extension PhotoAsset {
                     }
                 }else {
                     switch assetResource.type {
-                    case livePhotoType:
+                    case livePhotoType, liveVideoType:
                         if let photoFileSize = assetResource.value(forKey: "fileSize") as? Int {
                             fileSize += photoFileSize
-                        }
-                    case liveVideoType:
-                        if let videoFileSize = assetResource.value(forKey: "fileSize") as? Int,
-                           !isDisableLivePhoto {
-                            fileSize += videoFileSize
                         }
                     default:
                         break
@@ -154,6 +149,7 @@ extension PhotoAsset {
     func getLocalFileSize() -> Int {
         var fileSize = 0
         if mediaType == .photo {
+            #if canImport(Kingfisher)
             if let networkImageAsset = networkImageAsset, fileSize == 0 {
                 if networkImageAsset.fileSize > 0 {
                     fileSize = networkImageAsset.fileSize
@@ -161,6 +157,7 @@ extension PhotoAsset {
                 }
                 return fileSize
             }
+            #endif
             if let livePhoto = localLivePhoto {
                 if livePhoto.imageURL.isFileURL {
                     fileSize += PhotoTools.fileSize(atPath: livePhoto.imageURL.path)

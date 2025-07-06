@@ -8,6 +8,9 @@
 
 import UIKit
 import Photos
+#if canImport(Kingfisher)
+import Kingfisher
+#endif
 
 public extension PhotoAsset {
     
@@ -26,10 +29,14 @@ public extension PhotoAsset {
                     if livePhoto.imageURL.isFileURL {
                         return UIImage(contentsOfFile: livePhoto.imageURL.path)
                     }else {
-                        let cacheKey = PhotoManager.ImageView.getCacheKey(forURL: livePhoto.imageURL)
-                        if PhotoManager.ImageView.isCached(forKey: cacheKey) {
-                            return PhotoManager.ImageView.getInMemoryCacheImage(forKey: cacheKey)
+                        #if canImport(Kingfisher)
+                        if ImageCache.default.isCached(forKey: livePhoto.imageURL.cacheKey) {
+                            return ImageCache.default.retrieveImageInMemoryCache(
+                                forKey: livePhoto.imageURL.cacheKey,
+                                options: []
+                            )
                         }
+                        #endif
                         return nil
                     }
                 }
@@ -57,13 +64,7 @@ public extension PhotoAsset {
         AssetManager.requestImageData(for: phAsset, options: options) { (result) in
             switch result {
             case .success(let dataResult):
-                let image = {
-                    if self.mediaSubType.isHDRPhoto && !self.isDisableHDR {
-                        return UIImage.HDRDecoded(dataResult.imageData)
-                    } else {
-                        return UIImage(data: dataResult.imageData)?.normalizedImage()
-                    }
-                }()
+                let image = UIImage(data: dataResult.imageData)?.normalizedImage()
                 if isGif && self.mediaSubType != .imageAnimated {
                     if let data = PhotoTools.getImageData(for: image) {
                         originalImage = UIImage(data: data)
@@ -87,15 +88,21 @@ public extension PhotoAsset {
         compressionQuality: CGFloat? = nil,
         completion: @escaping (UIImage?) -> Void
     ) {
-        if isNetworkAsset && !isEdited {
-            getNetworkImage { image, imageData in
+        #if canImport(Kingfisher)
+        let hasEdited: Bool
+        #if HXPICKER_ENABLE_EDITOR
+        hasEdited = editedResult != nil
+        #else
+        hasEdited = false
+        #endif
+        if isNetworkAsset && !hasEdited {
+            getNetworkImage { image in
                 guard let compressionQuality = compressionQuality else {
                     completion(image)
                     return
                 }
                 DispatchQueue.global().async {
-                    let imageData = imageData ?? PhotoTools.getImageData(for: image)
-                    guard let imageData,
+                    guard let imageData = PhotoTools.getImageData(for: image),
                           let data = PhotoTools.imageCompress(
                             imageData,
                               compressionQuality: compressionQuality
@@ -114,6 +121,7 @@ public extension PhotoAsset {
             }
             return
         }
+        #endif
         requestImage(compressionScale: compressionQuality) { image, _ in
             completion(image)
         }
@@ -129,8 +137,15 @@ public extension PhotoAsset {
         targetMode: HX.ImageTargetMode = .fill,
         completion: @escaping (UIImage?, PhotoAsset) -> Void
     ) {
-        if isNetworkAsset && !isEdited {
-            getNetworkImage { image, _ in
+        #if canImport(Kingfisher)
+        let hasEdited: Bool
+        #if HXPICKER_ENABLE_EDITOR
+        hasEdited = editedResult != nil
+        #else
+        hasEdited = false
+        #endif
+        if isNetworkAsset && !hasEdited {
+            getNetworkImage { image in
                 DispatchQueue.global().async {
                     let image = image?.scaleToFillSize(size: targetSize, mode: targetMode)
                     DispatchQueue.main.async {
@@ -140,6 +155,7 @@ public extension PhotoAsset {
             }
             return
         }
+        #endif
         requestImage(targetSize: targetSize, targetMode: targetMode) {
             completion($0, $1)
         }

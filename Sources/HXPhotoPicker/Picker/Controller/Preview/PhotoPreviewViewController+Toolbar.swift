@@ -193,7 +193,8 @@ extension PhotoPreviewViewController: PhotoToolBarDelegate {
             ) else {
                 return
             }
-            if photoAsset.mediaSubType.isLivePhoto {
+            if photoAsset.mediaSubType == .livePhoto ||
+               photoAsset.mediaSubType == .localLivePhoto {
                 let cell = getCell(
                     for: currentPreviewIndex
                 )

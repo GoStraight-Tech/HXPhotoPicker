@@ -352,6 +352,7 @@ public protocol PhotoPickerControllerDelegate: AnyObject {
         at indexs: [Int]
     )
     
+    #if canImport(Kingfisher)
     /// 预览界面网络图片下载成功
     func pickerController(
         _ pickerController: PhotoPickerController,
@@ -365,6 +366,7 @@ public protocol PhotoPickerControllerDelegate: AnyObject {
         previewNetworkImageDownloadFailed photoAsset: PhotoAsset,
         atIndex: Int
     )
+    #endif
     
     // MARK: 控制器生命周期
     /// 视图控制器即将显示
@@ -588,8 +590,12 @@ public extension PhotoPickerControllerDelegate {
         loadTitleChartlet editorViewController: EditorViewController,
         response: @escaping EditorTitleChartletResponse
     ) {
+        #if canImport(Kingfisher)
         let titles = PhotoTools.defaultTitleChartlet()
         response(titles)
+        #else
+        response([])
+        #endif
     }
     func pickerController(
         _ pickerController: PhotoPickerController,
@@ -599,8 +605,12 @@ public extension PhotoPickerControllerDelegate {
         response: @escaping EditorChartletListResponse
     ) {
         /// 默认加载这些贴图
+        #if canImport(Kingfisher)
         let chartletList = PhotoTools.defaultNetworkChartlet()
         response(titleIndex, chartletList)
+        #else
+        response(titleIndex, [])
+        #endif
     }
     func pickerController(
         _ pickerController: PhotoPickerController,
@@ -694,6 +704,7 @@ public extension PhotoPickerControllerDelegate {
         at indexs: [Int]
     ) { }
     
+    #if canImport(Kingfisher)
     func pickerController(
         _ pickerController: PhotoPickerController,
         previewNetworkImageDownloadSuccess photoAsset: PhotoAsset,
@@ -705,6 +716,7 @@ public extension PhotoPickerControllerDelegate {
         previewNetworkImageDownloadFailed photoAsset: PhotoAsset,
         atIndex: Int
     ) { }
+    #endif
     
     func pickerController(
         _ pickerController: PhotoPickerController,

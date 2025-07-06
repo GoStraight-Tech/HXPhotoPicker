@@ -6,9 +6,12 @@
 //
 
 import UIKit
+#if canImport(Kingfisher)
+import Kingfisher
+#endif
 
 class EditorChartletPreviewView: UIView {
-    private var imageView: HXImageViewProtocol!
+    private var imageView: ImageView!
     private var bgLayer: CAShapeLayer!
     let touchCenter: CGPoint
     let touchViewSize: CGSize
@@ -17,7 +20,6 @@ class EditorChartletPreviewView: UIView {
     var upslope: Bool = true
     var isHorizontal: Bool = false
     var horizontalType: Int = 0
-    
     init(
         image: UIImage,
         touch center: CGPoint,
@@ -30,7 +32,7 @@ class EditorChartletPreviewView: UIView {
         setupFrame(imageSize: image.size)
         initViews()
     }
-    
+    #if canImport(Kingfisher)
     init(
         imageURL: URL,
         editorType: EditorContentViewType,
@@ -43,29 +45,42 @@ class EditorChartletPreviewView: UIView {
         super.init(frame: .zero)
         setupFrame(imageSize: CGSize(width: 200, height: 200))
         initViews()
-        let options: ImageDownloadOptionsInfo
+        imageView.kf.indicatorType = .activity
+        let options: KingfisherOptionsInfo
         if imageURL.isGif && editorType == .video {
             options = []
         }else {
-            options = [.imageProcessor(CGSize(width: width * 2, height: height * 2))]
+            let processor = DownsamplingImageProcessor(
+                size: CGSize(
+                    width: width * 2,
+                    height: height * 2
+                )
+            )
+            options = [
+                .processor(processor),
+                .backgroundDecode
+            ]
         }
-        imageView.setImage(with: .init(downloadURL: imageURL, indicatorColor: .gray), placeholder: nil, options: options, progressHandler: nil) { [weak self]  in
-            guard let self else { return }
-            switch $0 {
-            case .success(let image):
-                self.image = image
-                self.setupFrame(imageSize: image.size)
-                self.bgLayer.path = self.bgLayerPath()
+        imageView.kf.setImage(
+            with: imageURL,
+            options: options
+        ) { [weak self] result in
+            switch result {
+            case .success(let imageResult):
+                self?.image = imageResult.image
+                self?.setupFrame(
+                    imageSize: imageResult.image.size
+                )
+                self?.bgLayer.path = self?.bgLayerPath()
             case .failure:
-                return
+                break
             }
         }
     }
+    #endif
     
     private func initViews() {
-        imageView = PhotoManager.ImageView.init()
-        imageView.contentMode = .scaleAspectFill
-        imageView.clipsToBounds = true
+        imageView = ImageView()
         bgLayer = CAShapeLayer()
         bgLayer.fillColor = UIColor.white.cgColor
         bgLayer.strokeColor = UIColor.white.cgColor

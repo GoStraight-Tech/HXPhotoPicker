@@ -48,7 +48,7 @@ public extension PhotoFetchAsset {
         var photoCount = 0
         var videoCount = 0
         var phAssetResult: [PHAsset] = []
-        let isRemoveSelectedAsset = config.isRemoveSelectedAssetWhenRemovingAssets
+        let isLimited = AssetPermissionsUtil.isLimitedAuthorizationStatus && config.isRemoveSelectedAssetWhenRemovingAssets
         assetCollection.enumerateAssets { photoAsset, index, stop in
             guard let phAsset = photoAsset.phAsset else {
                 return
@@ -66,14 +66,6 @@ public extension PhotoFetchAsset {
                     photoAsset.mediaSubType = .livePhoto
                 }
             }
-            if config.selectOptions.contains(.HDRPhoto) {
-                if photoAsset.mediaSubType == .image && phAsset.isHDR {
-                    photoAsset.mediaSubType = .HDRPhoto
-                }
-            }
-            photoAsset.isDisableHDR = config.isDisableHDR
-            photoAsset.isDisableLivePhoto = config.isDisableLivePhoto
-            photoAsset.isLivePhotoMuted = config.isLivePhotoMuted
             
             switch photoAsset.mediaType {
             case .photo:
@@ -93,11 +85,7 @@ public extension PhotoFetchAsset {
                 asset = selectPhotoAsset
                 selectedAsset = selectPhotoAsset
             }
-            if let selectedAssetIdentifier = config.photoList.selectedAssetIdentifier,
-               selectedAssetIdentifier == phAsset.localIdentifier {
-                selectedAsset = photoAsset
-            }
-            if isRemoveSelectedAsset {
+            if isLimited {
                 phAssetResult.append(phAsset)
             }
             photoAssets.append(asset)
@@ -116,7 +104,7 @@ public extension PhotoFetchAsset {
                 }
             }
         }
-        if isRemoveSelectedAsset {
+        if isLimited {
             var removedAssets: [PhotoAsset] = []
             for (index, selectedPHAsset) in selectedPHAssets.enumerated() where !phAssetResult.contains(selectedPHAsset) {
                 let resultCount = PHAsset.fetchAssets(withLocalIdentifiers: [selectedPHAsset.localIdentifier], options: nil).count
@@ -132,10 +120,6 @@ public extension PhotoFetchAsset {
             }
         }
         for asset in localAssets.reversed() {
-            if let selectedAssetIdentifier = config.photoList.selectedAssetIdentifier,
-               selectedAssetIdentifier == asset.identifier {
-                selectedAsset = asset
-            }
             photoAssets.append(asset)
             if config.isFetchDeatilsAsset {
                 if asset.mediaSubType.isNormalPhoto {

@@ -81,9 +81,16 @@ extension CameraViewController: CameraResultViewControllerDelegate {
         delegate?.cameraViewController(
             self,
             didFinishWithResult: result,
-            phAsset: phAsset,
             location: location
         )
+        if let phAsset = phAsset {
+            delegate?.cameraViewController(
+                self,
+                didFinishWithResult: result,
+                phAsset: phAsset,
+                location: location
+            )
+        }
         backClick()
     }
     

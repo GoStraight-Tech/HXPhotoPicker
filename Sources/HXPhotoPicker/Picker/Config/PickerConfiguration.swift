@@ -8,7 +8,7 @@
 
 import UIKit
 
-public struct PickerConfiguration: IndicatorTypeConfig, PhotoDebugLogsConfig, PhotoHUDConfig, ImageViewConfig {
+public struct PickerConfiguration: IndicatorTypeConfig, PhotoDebugLogsConfig, PhotoHUDConfig {
     
     /// 图片资源
     public var imageResource: HX.ImageResource { HX.ImageResource.shared }
@@ -19,8 +19,8 @@ public struct PickerConfiguration: IndicatorTypeConfig, PhotoDebugLogsConfig, Ph
     /// 主题色
     public var themeColor: UIColor = .systemBlue { didSet { setThemeColor(themeColor) } }
     
-    /// 在系统相册移除照片时是否移除对应选择的数据
-    /// Whether to remove the corresponding selected data when removing photos from the system album
+    /// 在相册权限受限时，移除授权的照片时是否移除对应选择的数据
+    /// Whether to remove the corresponding selected data when removing authorized assets
     public var isRemoveSelectedAssetWhenRemovingAssets: Bool = true
     
     public var modalPresentationStyle: UIModalPresentationStyle
@@ -79,15 +79,6 @@ public struct PickerConfiguration: IndicatorTypeConfig, PhotoDebugLogsConfig, Ph
     /// select mode
     /// 选择模式
     public var selectMode: PickerSelectMode = .multiple
-    
-    /// 禁用HDR
-    public var isDisableHDR: Bool = false
-    
-    /// 禁用LivePhoto
-    public var isDisableLivePhoto: Bool = false
-    
-    /// LivePhoto静音
-    public var isLivePhotoMuted: Bool = false
     
     /// Photos and videos can be selected together
     /// 照片和视频可以一起选择

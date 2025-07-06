@@ -129,7 +129,8 @@ public class PhotoPreviewViewController: PhotoBaseViewController {
     public override func deviceOrientationWillChanged(notify: Notification) {
         orientationDidChange = true
         if let cell = getCell(for: currentPreviewIndex) {
-            if cell.photoAsset.mediaSubType.isLivePhoto {
+            if cell.photoAsset.mediaSubType == .livePhoto ||
+                cell.photoAsset.mediaSubType == .localLivePhoto {
                 if #available(iOS 9.1, *) {
                     cell.scrollContentView.livePhotoView.stopPlayback()
                 }
@@ -148,7 +149,21 @@ public class PhotoPreviewViewController: PhotoBaseViewController {
     public override func viewDidAppear(_ animated: Bool) {
         super.viewDidAppear(animated)
         viewDidAppear = true
-        requestPreviewAsset()
+        DispatchQueue.main.async {
+            if let cell = self.getCell(for: self.currentPreviewIndex) {
+                cell.requestPreviewAsset()
+            }else {
+                self.requestPreviewTimer = Timer.scheduledTimer(
+                    withTimeInterval: 0.2,
+                    repeats: false
+                ) { [weak self] _ in
+                    guard let self = self else { return }
+                    let cell = self.getCell(for: self.currentPreviewIndex)
+                    cell?.requestPreviewAsset()
+                }
+            }
+        }
+        
         let isFullscreen = pickerController.modalPresentationStyle == .fullScreen || (splitViewController?.modalPresentationStyle == .fullScreen)
         let isMacApp: Bool
         if #available(iOS 14.0, *), ProcessInfo.processInfo.isiOSAppOnMac {
@@ -165,23 +180,6 @@ public class PhotoPreviewViewController: PhotoBaseViewController {
         }
         if isShowToolbar {
             photoToolbar.viewDidAppear(self)
-        }
-    }
-    
-    func requestPreviewAsset() {
-        DispatchQueue.main.async {
-            if let cell = self.getCell(for: self.currentPreviewIndex) {
-                cell.requestPreviewAsset()
-            }else {
-                self.requestPreviewTimer = Timer.scheduledTimer(
-                    withTimeInterval: 0.2,
-                    repeats: false
-                ) { [weak self] _ in
-                    guard let self = self else { return }
-                    let cell = self.getCell(for: self.currentPreviewIndex)
-                    cell?.requestPreviewAsset()
-                }
-            }
         }
     }
     
@@ -238,7 +236,7 @@ extension PhotoPreviewViewController {
         collectionViewLayout.minimumLineSpacing = 0
         collectionViewLayout.minimumInteritemSpacing = 0
         collectionViewLayout.sectionInset = UIEdgeInsets(top: 0, left: 10, bottom: 0, right: 10)
-        collectionView = HXCollectionView(frame: view.bounds, collectionViewLayout: collectionViewLayout)
+        collectionView = UICollectionView(frame: view.bounds, collectionViewLayout: collectionViewLayout)
         collectionView.backgroundColor = .clear
         collectionView.dataSource = self
         collectionView.delegate = self
@@ -289,11 +287,11 @@ extension PhotoPreviewViewController {
                         style: .done,
                         target: self,
                         action: #selector(didCancelItemClick)
-                    ).hidesShared()
+                    )
                     navigationItem.leftBarButtonItem = cancelItem
                 }
                 if pickerConfig.isMultipleSelect {
-                    navigationItem.rightBarButtonItem = .initCustomView(customView: selectBoxControl)
+                    navigationItem.rightBarButtonItem = UIBarButtonItem(customView: selectBoxControl)
                 }
             }else {
                 var cancelItem: UIBarButtonItem
@@ -306,14 +304,14 @@ extension PhotoPreviewViewController {
                         style: .done,
                         target: self,
                         action: #selector(didCancelItemClick)
-                    ).hidesShared()
+                    )
                 }else {
                     cancelItem = UIBarButtonItem(
                         title: .textPreview.cancelTitle.text,
                         style: .done,
                         target: self,
                         action: #selector(didCancelItemClick)
-                    ).hidesShared()
+                    )
                 }
                 if config.cancelPosition == .left {
                     navigationItem.leftBarButtonItem = cancelItem
@@ -355,7 +353,7 @@ extension PhotoPreviewViewController {
                     style: .done,
                     target: self,
                     action: #selector(didCancelItemClick)
-                ).hidesShared()
+                )
                 navigationItem.leftBarButtonItem = cancelItem
             }
             if assetCount > 0 && currentPreviewIndex == 0 {
@@ -382,12 +380,7 @@ extension PhotoPreviewViewController {
             view.addSubview(navBgView)
             self.navBgView = navBgView
         }
-        
-        //强制LTR，避免阿语下预览图片内容被镜像
-        view.semanticContentAttribute = .forceLeftToRight
-        collectionView.semanticContentAttribute = .forceLeftToRight
     }
-    
     func configBottomViewFrame() {
         if !config.isShowBottomView {
             return
@@ -616,6 +609,7 @@ extension PhotoPreviewViewController {
     
     @objc func didCancelItemClick() {
         pickerController.cancelCallback()
+        dismiss(animated: true, completion: nil)
     }
     
     func removeSelectedAssetWhenRemovingAssets(_ assets: [PhotoAsset]) {

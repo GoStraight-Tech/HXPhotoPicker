@@ -7,6 +7,9 @@
 
 import UIKit
 import Photos
+#if canImport(Kingfisher)
+import Kingfisher
+#endif
 
 public protocol EditorViewControllerDelegate: AnyObject {
     
@@ -200,8 +203,12 @@ public extension EditorViewControllerDelegate {
         _ editorViewController: EditorViewController,
         loadTitleChartlet response: @escaping EditorTitleChartletResponse
     ) {
+        #if canImport(Kingfisher)
         let titles = PhotoTools.defaultTitleChartlet()
         response(titles)
+        #else
+        response([])
+        #endif
     }
     
     func editorViewController(
@@ -211,8 +218,12 @@ public extension EditorViewControllerDelegate {
         loadChartletList response: @escaping EditorChartletListResponse
     ) {
         /// 默认加载这些贴图
+        #if canImport(Kingfisher)
         let chartletList = PhotoTools.defaultNetworkChartlet()
         response(titleIndex, chartletList)
+        #else
+        response(titleIndex, [])
+        #endif
     }
     
     func editorViewController(

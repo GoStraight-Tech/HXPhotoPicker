@@ -40,9 +40,8 @@ public class PhotoBrowserInteractiveAnimator: PhotoBrowserInteractiveTransition,
               let pickerController = transitionContext.viewController(forKey: .from) as? PhotoPickerController,
               let previewViewController = pickerController.previewViewController else {
             canInteration = false
-            cancel()
-            transitionContext.completeTransition(false)
             self.transitionContext = nil
+            cancel()
             return
         }
         backgroundColor = pickerController.view.backgroundColor

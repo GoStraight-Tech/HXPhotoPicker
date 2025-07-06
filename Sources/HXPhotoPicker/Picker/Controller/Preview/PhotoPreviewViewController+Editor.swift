@@ -41,10 +41,6 @@ extension PhotoPreviewViewController: EditorViewControllerDelegate {
                 }
                 if !photoAsset.isSelected {
                     didSelectBoxControlClick()
-                }else {
-                    if !pickerController.pickerData.canSelect(photoAsset, isShowHUD: true) {
-                        didSelectBoxControlClick()
-                    }
                 }
             }
             pickerController.didEditAsset(photoAsset: photoAsset, atIndex: currentPreviewIndex)
@@ -71,10 +67,6 @@ extension PhotoPreviewViewController: EditorViewControllerDelegate {
             }
             if !photoAsset.isSelected {
                 didSelectBoxControlClick()
-            }else {
-                if !pickerController.pickerData.canSelect(photoAsset, isShowHUD: true) {
-                    didSelectBoxControlClick()
-                }
             }
             if beforeHasEdit {
                 reloadCell(for: currentPreviewIndex)
@@ -95,8 +87,12 @@ extension PhotoPreviewViewController: EditorViewControllerDelegate {
         loadTitleChartlet response: @escaping EditorTitleChartletResponse
     ) {
         guard let pickerDelegate = pickerController.pickerDelegate else {
+            #if canImport(Kingfisher)
             let titles = PhotoTools.defaultTitleChartlet()
             response(titles)
+            #else
+            response([])
+            #endif
             return
         }
         pickerDelegate.pickerController(
@@ -113,8 +109,12 @@ extension PhotoPreviewViewController: EditorViewControllerDelegate {
         loadChartletList response: @escaping EditorChartletListResponse
     ) {
         guard let pickerDelegate = pickerController.pickerDelegate else {
+            #if canImport(Kingfisher)
             let chartletList = PhotoTools.defaultNetworkChartlet()
             response(titleIndex, chartletList)
+            #else
+            response(titleIndex, [])
+            #endif
             return
         }
         pickerDelegate.pickerController(

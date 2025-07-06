@@ -51,11 +51,6 @@ open class PhotoSplitViewController: UISplitViewController, UISplitViewControlle
     
     open override func viewDidLoad() {
         super.viewDidLoad()
-        if PhotoManager.isRTL {
-            view.semanticContentAttribute = .forceRightToLeft
-        }else {
-            view.semanticContentAttribute = .forceLeftToRight
-        }
         if !UIDevice.isPad, !UIDevice.isPortrait, !isCollapsed, modalPresentationStyle == .fullScreen {
             switch displayMode {
             case .oneBesideSecondary:

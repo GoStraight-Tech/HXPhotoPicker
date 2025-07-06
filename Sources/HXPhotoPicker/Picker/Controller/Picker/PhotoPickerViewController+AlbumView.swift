@@ -101,13 +101,9 @@ extension PhotoPickerViewController: PhotoAlbumListDelegate {
         if titleView.isSelected {
             if self.navigationController?.modalPresentationStyle == UIModalPresentationStyle.fullScreen &&
                 UIDevice.isPortrait {
-                if let barHeight = self.navigationController?.navigationBar.frame.maxY {
-                    self.albumView.y = barHeight
-                }else {
-                    self.albumView.y = UIDevice.navigationBarHeight
-                }
+                self.albumView.y = UIDevice.navigationBarHeight
             }else {
-                if let barHeight = self.navigationController?.navigationBar.frame.maxY {
+                if let barHeight = self.navigationController?.navigationBar.height {
                     self.albumView.y = barHeight
                 }else {
                     self.albumView.y = 0

@@ -6,8 +6,13 @@
 //
 
 import UIKit
+#if canImport(Kingfisher)
+import Kingfisher
+#endif
 
 public extension PhotoAsset {
+    
+    #if canImport(Kingfisher)
     
     /// 加载原图，只在预览界面有效
     func loadNetworkOriginalImage(_ completion: ((PhotoAsset) -> Void)? = nil) {
@@ -26,7 +31,7 @@ public extension PhotoAsset {
         if let networkImage = networkImageAsset {
             if networkImage.originalLoadMode == .alwaysThumbnail {
                 if let originalURL = networkImage.originalURL,
-                   PhotoManager.ImageView.isCached(forKey: PhotoManager.ImageView.getCacheKey(forURL: originalURL)) {
+                   ImageCache.default.isCached(forKey: originalURL.cacheKey) {
                     resultHandler(.success(.init(url: originalURL, urlType: .network, mediaType: .photo)))
                     return
                 }else if let thumbnailURL = networkImage.thumbnailURL {
@@ -49,16 +54,16 @@ public extension PhotoAsset {
     func getNetworkImage(
         urlType: DonwloadURLType = .original,
         filterEditor: Bool = false,
-        progressBlock: ((CGFloat) -> Void)? = nil,
-        resultHandler: @escaping (UIImage?, Data?) -> Void
+        progressBlock: DownloadProgressBlock? = nil,
+        resultHandler: @escaping (UIImage?) -> Void
     ) {
         #if HXPICKER_ENABLE_EDITOR
         if let photoEdit = photoEditedResult, !filterEditor {
             if urlType == .thumbnail {
-                resultHandler(photoEdit.image, nil)
+                resultHandler(photoEdit.image)
             }else {
                 let image = UIImage.init(contentsOfFile: photoEdit.url.path)
-                resultHandler(image, nil)
+                resultHandler(image)
             }
             return
         }
@@ -72,7 +77,7 @@ public extension PhotoAsset {
         }else if let videoAsset = networkVideoAsset {
             let videoURL: URL?
             if let coverImage = videoAsset.coverImage {
-                resultHandler(coverImage, nil)
+                resultHandler(coverImage)
                 return
             }else if let coverImageURL = videoAsset.coverImageURL {
                 videoURL = coverImageURL
@@ -85,35 +90,44 @@ public extension PhotoAsset {
                 }
             }
             guard let videoURL else {
-                resultHandler(nil, nil)
+                resultHandler(nil)
                 return
             }
-            PhotoTools.getVideoThumbnailImage(url: videoURL, atTime: 0.1) { _, image, _ in
-                guard let image else {
-                    resultHandler(nil, nil)
-                    return
+            let provider = AVAssetImageDataProvider(assetURL: videoURL, seconds: 0.1)
+            provider.assetImageGenerator.appliesPreferredTrackTransform = true
+            _ = KingfisherManager.shared.retrieveImage(with: .provider(provider)) { result in
+                switch result {
+                case .success(let result):
+                    resultHandler(result.image)
+                case .failure:
+                    resultHandler(nil)
                 }
-                resultHandler(image, nil)
             }
             return
         }
         guard let url else {
-            resultHandler(nil, nil)
+            resultHandler(nil)
             return
         }
-        PhotoManager.ImageView.download(with: .init(downloadURL: url), options: [.onlyLoadFirstFrame, .cacheOriginalImage], progressHandler: progressBlock) {
-            switch $0 {
-            case .success(let result):
-                var image = result.image
-                if let data = result.imageData, let _image = UIImage(data: data) {
-                    image = _image
-                }
-                resultHandler(image, result.imageData)
-            case .failure:
-                resultHandler(nil, nil)
+        let options: KingfisherOptionsInfo = isThumbnail ?
+            .init(
+                [.onlyLoadFirstFrame,
+             .cacheOriginalImage]
+            )
+            :
+            .init(
+                [.backgroundDecode]
+            )
+        
+        PhotoTools.downloadNetworkImage(with: url, options: options, progressBlock: progressBlock) { (image) in
+            if let image = image {
+                resultHandler(image)
+            }else {
+                resultHandler(nil)
             }
         }
     }
+    #endif
     
     /// 获取网络视频的地址，编辑过就是本地地址，未编辑就是网络地址
     /// - Parameter resultHandler: 视频地址、是否为网络地址

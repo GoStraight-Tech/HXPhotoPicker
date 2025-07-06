@@ -78,7 +78,6 @@ extension EditorAdjusterView {
         }
         deselectedSticker()
         let image = self.image
-        let imageData = self.imageData
         let cropRect = getCropRect()
         let cropRatio = getCropOption()
         var canvasImage: UIImage?
@@ -108,7 +107,6 @@ extension EditorAdjusterView {
             if self.contentType == .image {
                 self.cropImage(
                     image,
-                    imageData: imageData,
                     rect: cropRect,
                     cropFactor: cropFactor,
                     completion: completion
@@ -152,14 +150,12 @@ extension EditorAdjusterView {
             height: rect.height * scrollView.zoomScale
         )
         
-        let centerRatio = CGPoint(
-            x: CGFloat(floor(rect.midX / viewSize.width * 10000) / 10000),
-            y: CGFloat(floor(rect.midY / viewSize.height * 10000) / 10000))
+        let centerRatio = CGPoint(x: rect.midX / viewSize.width, y: rect.midY / viewSize.height)
         
         let cropRect = getCropRect()
         let sizeRatio = CGPoint(
-            x: CGFloat(floor(cropRect.width / viewSize.width * 10000) / 10000),
-            y: CGFloat(floor(cropRect.height / viewSize.height * 10000) / 10000)
+            x: cropRect.width / viewSize.width,
+            y: cropRect.height / viewSize.height
         )
         
         return (centerRatio: centerRatio, sizeRatio: sizeRatio)
@@ -167,7 +163,6 @@ extension EditorAdjusterView {
     
     func cropImage(
         _ image: UIImage?,
-        imageData: Data?,
         rect: CGRect,
         cropFactor: CropFactor,
         completion: @escaping (Result<ImageEditedResult, EditorError>) -> Void
@@ -179,26 +174,11 @@ extension EditorAdjusterView {
             return
         }
         var cropRect = rect
-        let imageMaxSize = inputImage.size.width * inputImage.size.height * exportScale
-        let overlayMaxSize: CGFloat = 1920 * 1080 * 3
-        let overlayImageSize: CGSize
-        if imageMaxSize > overlayMaxSize {
-            let scale = overlayMaxSize / imageMaxSize
-            overlayImageSize = .init(width: inputImage.width * scale, height: inputImage.height * scale)
-        }else {
-            overlayImageSize = inputImage.size
-        }
-        let overlayImage = getOverlayImage(overlayImageSize, cropFactor: cropFactor)
+        let overlayImage = getOverlayImage(inputImage.size, cropFactor: cropFactor)
         var exportScale = exportScale
-        if !isJPEGImage, !isHEICImage {
-            let exportMaxSize = exportMaxSize * 0.7
-            if imageMaxSize > exportMaxSize {
-                exportScale = exportMaxSize / imageMaxSize
-            }
-        }else {
-            if imageMaxSize > exportMaxSize {
-                exportScale = exportMaxSize / imageMaxSize
-            }
+        let maxSize = max(inputImage.size.width, inputImage.size.height)
+        if maxSize > 10000 {
+            exportScale = 10000 / maxSize
         }
         if exportScale != inputImage.scale && overlayImage != nil {
             let scale = exportScale / inputImage.scale
@@ -207,7 +187,7 @@ extension EditorAdjusterView {
             cropRect.size.width *= scale
             cropRect.size.height *= scale
         }
-        if let animateOption = imageData?.animateImageFrame() {
+        if let animateOption = inputImage.animateImageFrame() {
             cropAnimateImage(
                 animateOption,
                 overlayImage: overlayImage,
@@ -217,7 +197,7 @@ extension EditorAdjusterView {
             return
         }
         if let overlayImage = overlayImage,
-           let image = inputImage.merge(images: [overlayImage], opaque: isJPEGImage, isJPEG: isJPEGImage || isHEICImage, compressionQuality: 1, scale: exportScale) {
+           let image = inputImage.merge(images: [overlayImage], scale: exportScale) {
             inputImage = image
         }
         guard let image = PhotoTools.cropImage(inputImage, cropFactor: cropFactor) else {
@@ -226,7 +206,7 @@ extension EditorAdjusterView {
             }
             return
         }
-        getImageData(image, compressionQuality: exportScale != self.exportScale ? 0.8 : 0.5) { [weak self] in
+        getImageData(image) { [weak self] in
             guard let self = self,
                   let imageData = $0
             else {
@@ -252,7 +232,7 @@ extension EditorAdjusterView {
                 if let config = self.urlConfig {
                     urlConfig = config
                 }else {
-                    let fileName = String.fileName(suffix: data.isGif ? "gif" : (isJPEGImage ? "jpeg" : "png"))
+                    let fileName = String.fileName(suffix: data.isGif ? "gif" : "png")
                     urlConfig = .init(fileName: fileName, type: .temp)
                 }
                 if PhotoTools.write(toFile: urlConfig.url, imageData: data) == nil {
@@ -424,12 +404,10 @@ extension EditorAdjusterView {
         }
     }
     
-    fileprivate func getImageData(_ image: UIImage, compressionQuality: CGFloat = 0.5, completion: @escaping (Data?) -> Void) {
+    fileprivate func getImageData(_ image: UIImage, completion: @escaping (Data?) -> Void) {
         PhotoTools.getImageData(
             image,
             isHEIC: isHEICImage,
-            isJPEG: isJPEGImage,
-            compressionQuality: compressionQuality,
             queueLabel: "HXPhotoPicker.editor.cropImageQueue"
         ) {
             guard let imageData = $0 else {

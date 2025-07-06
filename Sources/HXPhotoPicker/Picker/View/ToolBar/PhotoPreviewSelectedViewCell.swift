@@ -37,7 +37,9 @@ open class PhotoPreviewSelectedViewCell: UICollectionViewCell {
                 tickView.isHidden = false
                 tickView.tickLayer.strokeColor = tickColor?.cgColor
             }
+            #if canImport(Kingfisher)
             photoView.kf_indicatorColor = tickColor
+            #endif
         }
     }
     

@@ -69,7 +69,7 @@ open class AlbumListView: UIView, PhotoAlbumList, UITableViewDataSource, UITable
         configColor()
     }
     public func initViews() {
-        tableView = HXTableView(frame: .zero, style: .plain)
+        tableView = UITableView(frame: .zero, style: .plain)
         tableView.dataSource = self
         tableView.delegate = self
         tableView.separatorStyle = .none
@@ -181,7 +181,7 @@ open class AlbumListView: UIView, PhotoAlbumList, UITableViewDataSource, UITable
     
     open override func layoutSubviews() {
         super.layoutSubviews()
-        tableView.hxPicker_frame = bounds
+        tableView.frame = bounds
     }
     
     open override func traitCollectionDidChange(_ previousTraitCollection: UITraitCollection?) {

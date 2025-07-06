@@ -34,10 +34,6 @@ public enum LanguageType: Equatable {
     case french
     /// 阿拉伯
     case arabic
-    /// 西班牙
-    case spanish
-    /// 葡萄牙
-    case portuguese
     
     case custom(Bundle)
 }

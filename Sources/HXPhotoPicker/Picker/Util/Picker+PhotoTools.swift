@@ -244,7 +244,7 @@ extension PhotoTools {
             config.allowSelectedTogether = true
         }
         let wxColor = "#07C160".color
-        config.selectOptions = [.gifPhoto, .livePhoto, .video]
+        config.selectOptions = [.gifPhoto, .video]
         config.albumShowMode = .popup
         config.appearanceStyle = .normal
         config.navigationViewBackgroundColor = "#2E2F30".color
@@ -292,7 +292,9 @@ extension PhotoTools {
         config.photoList.cell.selectBox.style = .tick
         config.photoList.cell.selectBox.size = CGSize(width: 23, height: 23)
         
+        #if canImport(Kingfisher)
         config.photoList.cell.kf_indicatorColor = .white
+        #endif
         
         config.photoList.cameraCell.backgroundColor = "#404040".color
         config.photoList.cameraCell.cameraImageName = "hx_picker_photoList_photograph_white"
@@ -333,10 +335,6 @@ extension PhotoTools {
         config.previewView.livePhotoMark.blurStyle = .dark
         config.previewView.livePhotoMark.textColor = "#ffffff".color
         config.previewView.livePhotoMark.imageColor = "#ffffff".color
-        config.previewView.livePhotoMark.mutedImageColor = "#ffffff".color
-        config.previewView.HDRMark.blurStyle = .dark
-        config.previewView.HDRMark.imageColor = "#ffffff".color
-        
         config.previewView.bottomView.barStyle = .black
         config.previewView.bottomView.originalButtonTitleColor = .white
         config.previewView.bottomView.originalSelectBox.backgroundColor = .clear

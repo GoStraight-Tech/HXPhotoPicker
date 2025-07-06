@@ -97,14 +97,10 @@ extension PhotoTools {
         _ inputImage: UIImage?,
         cropFactor: EditorAdjusterView.CropFactor
     ) -> UIImage? {
-        guard let inputImage = inputImage?.normalizedImage(), let imageRef = inputImage.cgImage else {
+        guard let imageRef = inputImage?.cgImage else {
             return nil
         }
-        if cropFactor.sizeRatio.equalTo(.init(x: 1, y: 1)),
-           cropFactor.mirrorScale.equalTo(.init(x: 1, y: 1)),
-           cropFactor.angle == 0,
-           !cropFactor.isRound,
-           cropFactor.maskImage == nil {
+        if cropFactor.sizeRatio.equalTo(.init(x: 1, y: 1)), !cropFactor.isRound, cropFactor.maskImage == nil {
             return inputImage
         }
         let width = CGFloat(imageRef.width)

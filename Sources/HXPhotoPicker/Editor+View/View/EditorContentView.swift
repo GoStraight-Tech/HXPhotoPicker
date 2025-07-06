@@ -65,7 +65,7 @@ class EditorContentView: UIView {
         }
         set {
             type = .image
-            imageView.setImage(newValue, animated: false)
+            imageView.setImage(newValue)
         }
     }
     
@@ -110,9 +110,10 @@ class EditorContentView: UIView {
     }
     
     var imageData: Data? {
-        didSet {
+        get { nil }
+        set {
             type = .image
-            imageView.setImageData(imageData)
+            imageView.setImageData(newValue)
         }
     }
     
@@ -361,7 +362,7 @@ class EditorContentView: UIView {
     }
     
     // MARK: SubViews
-    var imageView: HXImageViewProtocol!
+    var imageView: ImageView!
     var videoView: EditorVideoPlayerView!
     var canvasView: UIView!
     var drawView: EditorDrawView!
@@ -369,13 +370,10 @@ class EditorContentView: UIView {
     var stickerView: EditorStickersView!
     
     private func initViews() {
-        imageView = PhotoManager.ImageView.init()
+        imageView = ImageView()
         imageView.contentMode = .scaleAspectFill
         imageView.clipsToBounds = true
         imageView.isHidden = true
-        if #available(iOS 17, *) {
-            imageView.preferredImageDynamicRange = .high
-        }
         addSubview(imageView)
         
         mosaicView = EditorMosaicView()

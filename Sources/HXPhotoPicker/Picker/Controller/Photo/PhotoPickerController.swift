@@ -219,11 +219,6 @@ open class PhotoPickerController: UINavigationController {
     
     public override func viewDidLoad() {
         super.viewDidLoad()
-        if PhotoManager.isRTL {
-            navigationBar.semanticContentAttribute = .forceRightToLeft
-        }else {
-            navigationBar.semanticContentAttribute = .forceLeftToRight
-        }
         setupDelegate()
         PhotoManager.shared.indicatorType = config.indicatorType
         PhotoManager.shared.loadNetworkVideoMode = config.previewView.loadNetworkVideoMode
@@ -359,19 +354,7 @@ open class PhotoPickerController: UINavigationController {
         super.init(nibName: nil, bundle: nil)
         pickerData.delegate = self
         fetchData.delegate = self
-        if config.selectMode == .single {
-            if config.previewView.bottomView.isHiddenOriginalButton {
-                isOriginal = true
-            }else {
-                isOriginal = config.isSelectedOriginal
-            }
-        }else {
-            if config.photoList.bottomView.isHiddenOriginalButton, config.previewView.bottomView.isHiddenOriginalButton {
-                isOriginal = true
-            }else {
-                isOriginal = config.isSelectedOriginal
-            }
-        }
+        isOriginal = config.isSelectedOriginal
         autoDismiss = config.isAutoBack
         modalPresentationStyle = config.modalPresentationStyle
         pickerDelegate = delegate
@@ -412,19 +395,7 @@ open class PhotoPickerController: UINavigationController {
         self.config.adaptiveBarAppearance = false
         pickerData.delegate = self
         fetchData.delegate = self
-        if config.selectMode == .single {
-            if config.previewView.bottomView.isHiddenOriginalButton {
-                isOriginal = true
-            }else {
-                isOriginal = config.isSelectedOriginal
-            }
-        }else {
-            if config.photoList.bottomView.isHiddenOriginalButton, config.previewView.bottomView.isHiddenOriginalButton {
-                isOriginal = true
-            }else {
-                isOriginal = config.isSelectedOriginal
-            }
-        }
+        isOriginal = config.isSelectedOriginal
         autoDismiss = config.isAutoBack
         pickerDelegate = delegate
         selectedAssetArray = selectedAssets
@@ -462,19 +433,7 @@ open class PhotoPickerController: UINavigationController {
         super.init(nibName: nil, bundle: nil)
         pickerData.delegate = self
         fetchData.delegate = self
-        if config.selectMode == .single {
-            if config.previewView.bottomView.isHiddenOriginalButton {
-                isOriginal = true
-            }else {
-                isOriginal = self.config.isSelectedOriginal
-            }
-        }else {
-            if config.photoList.bottomView.isHiddenOriginalButton, config.previewView.bottomView.isHiddenOriginalButton {
-                isOriginal = true
-            }else {
-                isOriginal = self.config.isSelectedOriginal
-            }
-        }
+        isOriginal = self.config.isSelectedOriginal
         autoDismiss = self.config.isAutoBack
         pickerDelegate = delegate
         modalPresentationStyle = config.modalPresentationStyle

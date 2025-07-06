@@ -6,6 +6,9 @@
 //
 
 import UIKit
+#if canImport(Kingfisher)
+import Kingfisher
+#endif
 
 protocol EditorChartletViewListCellDelegate: AnyObject {
     func listCell(_ cell: EditorChartletViewListCell, didSelectImage image: UIImage, imageData: Data?)
@@ -49,7 +52,7 @@ class EditorChartletViewListCell: UICollectionViewCell,
         flowLayout.scrollDirection = .vertical
         flowLayout.minimumLineSpacing = 5
         flowLayout.minimumInteritemSpacing = 5
-        collectionView = HXCollectionView.init(frame: .zero, collectionViewLayout: flowLayout)
+        collectionView = UICollectionView.init(frame: .zero, collectionViewLayout: flowLayout)
         collectionView.backgroundColor = .clear
         collectionView.dataSource = self
         collectionView.delegate = self
@@ -117,31 +120,32 @@ class EditorChartletViewListCell: UICollectionViewCell,
                 imageData: imageData
             )
         }else {
+            #if canImport(Kingfisher)
             if let url = cell.chartlet.url, cell.downloadCompletion {
+                let options: KingfisherOptionsInfo = []
                 PhotoManager.HUDView.show(with: nil, delay: 0, animated: true, addedTo: superview)
-                PhotoManager.ImageView.download(with: .init(downloadURL: url), options: nil, progressHandler: nil) { [weak self]  in
+                PhotoTools.downloadNetworkImage(
+                    with: url,
+                    cancelOrigianl: true,
+                    options: options,
+                    completionHandler: { [weak self] (image) in
                     guard let self = self else { return }
                     PhotoManager.HUDView.dismiss(delay: 0, animated: true, for: self.superview)
-                    switch $0 {
-                    case .success(let result):
-                        if let image = result.image {
-                            if self.editorType == .image {
-                                self.delegate?.listCell(self, didSelectImage: image, imageData: nil)
+                    if let image = image {
+                        if self.editorType == .image {
+                            if let data = image.kf.gifRepresentation(),
+                               let img = UIImage(data: data) {
+                                self.delegate?.listCell(self, didSelectImage: img, imageData: nil)
                                 return
                             }
-                            self.delegate?.listCell(self, didSelectImage: image, imageData: result.imageData)
-                        }else if let imageData = result.imageData, let image = UIImage(data: imageData) {
-                            if self.editorType == .image {
-                                self.delegate?.listCell(self, didSelectImage: image, imageData: nil)
-                                return
-                            }
-                            self.delegate?.listCell(self, didSelectImage: image, imageData: imageData)
+                            self.delegate?.listCell(self, didSelectImage: image, imageData: nil)
+                            return
                         }
-                    case .failure:
-                        return
+                        self.delegate?.listCell(self, didSelectImage: image, imageData: image.kf.gifRepresentation())
                     }
-                }
+                })
             }
+            #endif
         }
     }
     

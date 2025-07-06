@@ -7,12 +7,7 @@
 
 import UIKit
 import HXPhotoPicker
-#if canImport(Kingfisher)
 import Kingfisher
-#endif
-#if canImport(SDWebImage)
-import SDWebImage
-#endif
 
 class PhotoBrowserViewController: UIViewController, UICollectionViewDataSource, UICollectionViewDelegate {
     lazy var flowLayout: UICollectionViewFlowLayout = {
@@ -58,9 +53,11 @@ class PhotoBrowserViewController: UIViewController, UICollectionViewDataSource, 
         let networkVideoAsset1 = PhotoAsset.init(networkVideoAsset: .init(videoURL: networkVideoURL1))
         previewAssets.append(networkVideoAsset1)
         
+        #if canImport(Kingfisher)
         let networkImageURL = URL.init(string: "https://wx4.sinaimg.cn/large/a6a681ebgy1gojng2qw07g208c093qv6.gif")!
         let networkImageAsset = PhotoAsset.init(networkImageAsset: NetworkImageAsset.init(thumbnailURL: networkImageURL, originalURL: networkImageURL)) // swiftlint:disable:this line_length
         previewAssets.append(networkImageAsset)
+        #endif
         
         if let filePath = Bundle.main.path(forResource: "IMG_0168", ofType: "GIF") {
             let gifAsset = PhotoAsset.init(localImageAsset: .init(imageURL: URL.init(fileURLWithPath: filePath)))
@@ -122,12 +119,7 @@ class PhotoBrowserViewController: UIViewController, UICollectionViewDataSource, 
     
     @objc func didClearButtonClick() {
         PhotoTools.removeCache()
-        #if canImport(Kingfisher)
         ImageCache.default.clearCache()
-        #endif
-        #if canImport(SDWebImage)
-        SDImageCache.shared.clear(with: .all)
-        #endif
         collectionView.reloadData()
     }
     
@@ -186,7 +178,7 @@ class PhotoBrowserViewController: UIViewController, UICollectionViewDataSource, 
         }
         let alert = UIAlertController(title: nil, message: nil, preferredStyle: .actionSheet)
         if let originalURL = photoAsset.networkImageAsset?.originalURL,
-           !PhotoManager.ImageView.isCached(forKey: PhotoManager.ImageView.getCacheKey(forURL: originalURL)) {
+           !originalURL.isCache {
             alert.addAction(.init(title: "查看原图", style: .default, handler: { [weak self] _ in
                 photoAsset.loadNetworkOriginalImage { [weak self] in
                     guard let self = self else { return }

@@ -6,7 +6,6 @@
 //
 
 import UIKit
-import Photos
 
 
 extension PhotoPickerViewController: PhotoPickerListDelegate {
@@ -45,12 +44,6 @@ extension PhotoPickerViewController: PhotoPickerListDelegate {
         }
     }
     
-    public func photoList(didLimitCell photoList: PhotoPickerList) {
-        if #available(iOS 14, *) {
-            PHPhotoLibrary.shared().presentLimitedLibraryPicker(from: pickerController)
-        }
-    }
-    
     public func photoList(_ photoList: PhotoPickerList, didSelectedAsset asset: PhotoAsset) {
         if isShowToolbar {
             photoToolbar.insertSelectedAsset(asset)
@@ -68,16 +61,13 @@ extension PhotoPickerViewController: PhotoPickerListDelegate {
     public func photoList(_ photoList: PhotoPickerList, updateAsset asset: PhotoAsset) {
         if isShowToolbar {
             photoToolbar.reloadSelectedAsset(asset)
-            requestSelectedAssetFileSize()
         }
     }
     
     public func photoList(selectedAssetDidChanged photoList: PhotoPickerList) {
-        if isShowToolbar {
-            photoToolbar.selectedAssetDidChanged(pickerController.selectedAssetArray)
-            requestSelectedAssetFileSize()
-        }
+        photoToolbar.selectedAssetDidChanged(pickerController.selectedAssetArray)
         finishItem?.selectedAssetDidChanged(pickerController.selectedAssetArray)
+        requestSelectedAssetFileSize()
     }
     
     public func photoList(_ photoList: PhotoPickerList, openEditor asset: PhotoAsset, with image: UIImage?) {
@@ -97,7 +87,7 @@ extension PhotoPickerViewController: PhotoPickerListDelegate {
         didFilterItemClick(modalPresentationStyle: modalPresentationStyle)
     }
     
-    public func quickSelect(_ photoAsset: PhotoAsset, isCapture: Bool = false) {
+    func quickSelect(_ photoAsset: PhotoAsset, isCapture: Bool = false) {
         if !photoAsset.isSelected {
             if !pickerConfig.isMultipleSelect || (pickerConfig.isSingleVideo && photoAsset.mediaType == .video) {
                 if pickerController.pickerData.canSelect(
@@ -115,7 +105,7 @@ extension PhotoPickerViewController: PhotoPickerListDelegate {
         }
     }
     
-    public func openEditor(
+    func openEditor(
         _ photoAsset: PhotoAsset,
         image: UIImage?,
         animated: Bool = true
@@ -135,7 +125,7 @@ extension PhotoPickerViewController: PhotoPickerListDelegate {
     }
     
     @discardableResult
-    public func openPhotoEditor(
+    func openPhotoEditor(
         photoAsset: PhotoAsset,
         animated: Bool = true
     ) -> Bool {
@@ -204,7 +194,7 @@ extension PhotoPickerViewController: PhotoPickerListDelegate {
     }
     
     @discardableResult
-    public func openVideoEditor(
+    func openVideoEditor(
         photoAsset: PhotoAsset,
         coverImage: UIImage? = nil,
         animated: Bool = true

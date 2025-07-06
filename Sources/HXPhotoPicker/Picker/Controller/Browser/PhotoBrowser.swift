@@ -281,7 +281,7 @@ open class PhotoBrowser: PhotoPickerController {
     }
     
     public func addRightItem(customView: UIView) {
-        previewViewController?.navigationItem.rightBarButtonItem = .initCustomView(customView: customView)
+        previewViewController?.navigationItem.rightBarButtonItem = UIBarButtonItem(customView: customView)
     }
     
     @objc
@@ -306,9 +306,6 @@ open class PhotoBrowser: PhotoPickerController {
         pConfig.livePhotoMark.blurStyle = .dark
         pConfig.livePhotoMark.imageColor = "#ffffff".color
         pConfig.livePhotoMark.textColor = "#ffffff".color
-        pConfig.livePhotoMark.mutedImageColor = "#ffffff".color
-        pConfig.HDRMark.blurStyle = .dark
-        pConfig.HDRMark.imageColor = "#ffffff".color
         
         pConfig.loadNetworkVideoMode = config.loadNetworkVideoMode
         pConfig.customVideoCellClass = config.customVideoCellClass
@@ -552,13 +549,6 @@ extension PhotoBrowser: PhotoPickerControllerDelegate {
         viewControllersDidAppear viewController: UIViewController
     ) {
         viewDidAppear?(self)
-        if didHidden { return }
-        if let pageIndicator, pageIndicator.alpha != 1 {
-            pageIndicator.alpha = 1
-        }
-        if gradualShadowImageView.alpha != 1 {
-            gradualShadowImageView.alpha = 1
-        }
     }
     
     public func pickerController(

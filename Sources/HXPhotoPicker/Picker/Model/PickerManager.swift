@@ -219,15 +219,7 @@ extension PickerManager {
                         photoAsset.mediaSubType = .livePhoto
                     }
                 }
-                if self.config.selectOptions.contains(.HDRPhoto) {
-                    if photoAsset.mediaSubType == .image && photoAsset.phAsset!.isHDR {
-                        photoAsset.mediaSubType = .HDRPhoto
-                    }
-                }
-                photoAsset.isDisableHDR = self.config.isDisableHDR
-                photoAsset.isDisableLivePhoto = self.config.isDisableLivePhoto
-                photoAsset.isLivePhotoMuted = self.config.isLivePhotoMuted
-                        
+                
                 switch photoAsset.mediaType {
                 case .photo:
                     if !self.selectOptions.isPhoto {

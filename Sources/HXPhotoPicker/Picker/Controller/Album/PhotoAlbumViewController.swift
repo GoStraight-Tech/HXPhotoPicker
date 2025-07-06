@@ -40,7 +40,7 @@ public class PhotoAlbumViewController: UIViewController, PhotoAlbumController {
 //            navigationItem.backBarButtonItem = .init(title: "", style: .plain, target: self, action: #selector(didBackClick))
 //        }
         initItems()
-        tableView = HXTableView(frame: .zero, style: .grouped)
+        tableView = UITableView(frame: .zero, style: .grouped)
         tableView.dataSource = self
         tableView.delegate = self
         tableView.separatorStyle = .none
@@ -52,13 +52,6 @@ public class PhotoAlbumViewController: UIViewController, PhotoAlbumController {
             tableView.sectionHeaderTopPadding = 0
         }
         view.addSubview(tableView)
-        if PhotoManager.isRTL {
-            navigationController?.navigationBar.semanticContentAttribute = .forceRightToLeft
-            tableView.semanticContentAttribute = .forceRightToLeft
-        }else {
-            navigationController?.navigationBar.semanticContentAttribute = .forceLeftToRight
-            tableView.semanticContentAttribute = .forceLeftToRight
-        }
         reloadData()
         updateColors()
     }
@@ -71,9 +64,9 @@ public class PhotoAlbumViewController: UIViewController, PhotoAlbumController {
             let view = item.init(config: config)
             view.itemDelegate = self
             if index < config.albumController.leftNavigationItems.count {
-                leftItems.append(.initCustomView(customView: view))
+                leftItems.append(.init(customView: view))
             }else {
-                rightItems.append(.initCustomView(customView: view))
+                rightItems.append(.init(customView: view))
             }
         }
         navigationItem.leftBarButtonItems = leftItems
@@ -218,7 +211,7 @@ extension PhotoAlbumViewController: UITableViewDataSource, UITableViewDelegate {
             let data = datas[indexPath.section]
             let count = data.assetCollections.count
             let marginCount = rowCount - 1
-            let margin: CGFloat = count > Int(rowCount) * 2 ? 5 : 0
+            let margin: CGFloat = assetCollections.count > Int(rowCount) * 2 ? 5 : 0
             let itemWidth = (view.width - (30 + 12 * marginCount) - UIDevice.leftMargin - UIDevice.rightMargin) / rowCount - margin
             let fontHeight = config.albumController.albumNameFont.lineHeight + config.albumController.photoCountFont.lineHeight + 8
             let itemHeight = itemWidth + fontHeight + 20

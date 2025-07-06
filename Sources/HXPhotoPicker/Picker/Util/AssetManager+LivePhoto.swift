@@ -25,7 +25,6 @@ public extension AssetManager {
     static func requestLivePhoto(
         for asset: PHAsset,
         targetSize: CGSize,
-        deliveryMode: PHImageRequestOptionsDeliveryMode = .highQualityFormat,
         iCloudHandler: ((PHImageRequestID) -> Void)? = nil,
         progressHandler: PHAssetImageProgressHandler? = nil,
         resultHandler: @escaping (PHLivePhoto?, [AnyHashable: Any]?, Bool) -> Void
@@ -33,17 +32,10 @@ public extension AssetManager {
         return requestLivePhoto(
             for: asset,
             targetSize: targetSize,
-            deliveryMode: deliveryMode,
             isNetworkAccessAllowed: false,
             progressHandler: progressHandler
         ) { (livePhoto, info) in
-            var isFinined: Bool = false
-            if deliveryMode != .highQualityFormat,
-               !self.assetDownloadError(for: info),
-               !self.assetCancelDownload(for: info) {
-                isFinined = true
-            }
-            if self.assetDownloadFinined(for: info) || isFinined {
+            if self.assetDownloadFinined(for: info) {
                 DispatchQueue.main.async {
                     resultHandler(livePhoto, info, true)
                 }
@@ -80,13 +72,12 @@ public extension AssetManager {
     static func requestLivePhoto(
         for asset: PHAsset,
         targetSize: CGSize,
-        deliveryMode: PHImageRequestOptionsDeliveryMode = .highQualityFormat,
         isNetworkAccessAllowed: Bool,
         progressHandler: PHAssetImageProgressHandler? = nil,
         resultHandler: @escaping LivePhotoResultHandler
     ) -> PHImageRequestID {
         let options = PHLivePhotoRequestOptions.init()
-        options.deliveryMode = deliveryMode
+        options.deliveryMode = .highQualityFormat
         options.isNetworkAccessAllowed = isNetworkAccessAllowed
         options.progressHandler = progressHandler
         return requestLivePhoto(

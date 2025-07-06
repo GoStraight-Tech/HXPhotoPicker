@@ -28,13 +28,6 @@ class PhotoPickerFilterViewController: UITableViewController {
     
     override func viewDidLoad() {
         super.viewDidLoad()
-        if PhotoManager.isRTL {
-            navigationController?.navigationBar.semanticContentAttribute = .forceRightToLeft
-            tableView.semanticContentAttribute = .forceRightToLeft
-        }else {
-            navigationController?.navigationBar.semanticContentAttribute = .forceLeftToRight
-            tableView.semanticContentAttribute = .forceLeftToRight
-        }
         if #available(iOS 13.0, *) {
             switch PhotoManager.shared.appearanceStyle {
             case .normal:
@@ -267,8 +260,8 @@ class PhotoPickerFilterViewController: UITableViewController {
 class PhotoPickerFilterViewCell: UITableViewCell {
     override func layoutSubviews() {
         super.layoutSubviews()
-        imageView?.hxPicker_center.x = 30
-        textLabel?.hxPicker_x = 60
+        imageView?.centerX = 30
+        textLabel?.x = 60
     }
 }
 

@@ -8,7 +8,6 @@
 import UIKit
 import HXPhotoPicker
 import CoreLocation
-import Photos
 #if canImport(GDPerformanceView_Swift)
 import GDPerformanceView_Swift
 #endif
@@ -70,6 +69,7 @@ class HomeViewController: UITableViewController {
                 }
                 #if !targetEnvironment(macCatalyst)
                 let camerController = rowType.controller as! CameraController
+                camerController.autoDismiss = false
                 camerController.cameraDelegate = self
                 present(camerController, animated: true, completion: nil)
                 #else
@@ -173,8 +173,7 @@ extension HomeViewController {
                 config.photoFilters = FilterTools.filters()
                 config.videoFilters = FilterTools.filters()
                 #else
-                var config = CameraConfiguration()
-                config.isAutoBack = false
+                let config = CameraConfiguration()
                 #endif
                 return CameraController(config: config, type: .all)
                 #else
@@ -282,9 +281,7 @@ extension HomeViewController: CameraControllerDelegate {
     func cameraController(
         _ cameraController: CameraController,
         didFinishWithResult result: CameraController.Result,
-        phAsset: PHAsset?,
-        location: CLLocation?
-    ) {
+        location: CLLocation?) {
         cameraController.dismiss(animated: true) {
             let photoAsset: PhotoAsset
             switch result {

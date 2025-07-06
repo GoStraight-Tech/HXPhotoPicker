@@ -22,7 +22,7 @@ extension UIImage {
         return self.scaleToFillSize(size: imageSize)
     }
     func scaleToFillSize(size: CGSize) -> UIImage? {
-        if self.size == size {
+        if __CGSizeEqualToSize(self.size, size) {
             return self
         }
         let format = UIGraphicsImageRendererFormat()

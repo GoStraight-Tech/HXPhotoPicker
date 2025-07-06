@@ -45,7 +45,8 @@ public class PhotoPeekViewController: UIViewController {
         super.viewDidLoad()
         if photoAsset != nil {
             if photoAsset.mediaType == .photo {
-                if photoAsset.mediaSubType.isLivePhoto {
+                if photoAsset.mediaSubType == .livePhoto ||
+                    photoAsset.mediaSubType == .localLivePhoto {
                     contentView = PhotoPreviewContentLivePhotoView()
                 }else {
                     contentView = PhotoPreviewContentPhotoView()

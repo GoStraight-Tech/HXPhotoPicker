@@ -9,14 +9,18 @@
 import UIKit
 import PhotosUI
 
+#if canImport(Kingfisher)
+import Kingfisher
+#endif
+
 protocol PhotoPreviewContentViewDelete: AnyObject {
     func contentView(requestSucceed contentView: PhotoPreviewContentViewProtocol)
     func contentView(requestFailed contentView: PhotoPreviewContentViewProtocol)
     func contentView(networkImagedownloadSuccess contentView: PhotoPreviewContentViewProtocol)
     func contentView(networkImagedownloadFailed contentView: PhotoPreviewContentViewProtocol)
     func contentView(updateContentSize contentView: PhotoPreviewContentViewProtocol)
-    func contentView(showLivePhotoMark contentView: PhotoPreviewContentViewProtocol)
-    func contentView(hideLivePhotoMark contentView: PhotoPreviewContentViewProtocol)
+    func contentView(livePhotoWillBeginPlayback contentView: PhotoPreviewContentViewProtocol)
+    func contentView(livePhotoDidEndPlayback contentView: PhotoPreviewContentViewProtocol)
 }
 
 extension PhotoPreviewContentViewDelete {
@@ -25,8 +29,8 @@ extension PhotoPreviewContentViewDelete {
     func contentView(networkImagedownloadSuccess contentView: PhotoPreviewContentViewProtocol) { }
     func contentView(networkImagedownloadFailed contentView: PhotoPreviewContentViewProtocol) { }
     func contentView(updateContentSize contentView: PhotoPreviewContentViewProtocol) { }
-    func contentView(showLivePhotoMark contentView: PhotoPreviewContentViewProtocol) { }
-    func contentView(hideLivePhotoMark contentView: PhotoPreviewContentViewProtocol) { }
+    func contentView(livePhotoWillBeginPlayback contentView: PhotoPreviewContentViewProtocol) { }
+    func contentView(livePhotoDidEndPlayback contentView: PhotoPreviewContentViewProtocol) { }
 }
 
 protocol PhotoPreviewContentViewProtocol: UIView {
@@ -38,7 +42,7 @@ protocol PhotoPreviewContentViewProtocol: UIView {
     var isPeek: Bool { get set }
     var isBacking: Bool { get set }
     
-    var imageView: HXImageViewProtocol! { get set }
+    var imageView: ImageView! { get set }
     var livePhotoView: PHLivePhotoView! { get set }
     var videoView: PhotoPreviewVideoView! { get set }
     

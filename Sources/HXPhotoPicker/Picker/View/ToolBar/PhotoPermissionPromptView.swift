@@ -40,9 +40,6 @@ class PhotoPermissionPromptView: UIView {
         if let imageSize = promptArrow.image?.size {
             promptArrow.size = imageSize
         }
-        if PhotoManager.isRTL {
-            promptArrow.hxPicker_flip()
-        }
         addSubview(promptArrow)
         
         addGestureRecognizer(
@@ -90,18 +87,18 @@ class PhotoPermissionPromptView: UIView {
         let viewHeight = height
         let leftMargin = self.leftMargin
         if leftMargin > 0 {
-            promptIcon.hxPicker_x = leftMargin
+            promptIcon.x = leftMargin
         }else {
-            promptIcon.hxPicker_x = 12
+            promptIcon.x = 12
         }
         promptIcon.centerY = viewHeight * 0.5
         if UIDevice.rightMargin > 0 {
-            promptArrow.hxPicker_x = width - promptArrow.width - UIDevice.rightMargin
+            promptArrow.x = width - promptArrow.width - UIDevice.rightMargin
         }else {
-            promptArrow.hxPicker_x = width - 12 - promptArrow.width
+            promptArrow.x = width - 12 - promptArrow.width
         }
-        promptLb.hxPicker_x = promptIcon.hxPicker_maxX + 12
-        promptLb.width = promptArrow.hxPicker_x - promptLb.hxPicker_x - 12
+        promptLb.x = promptIcon.frame.maxX + 12
+        promptLb.width = promptArrow.x - promptLb.x - 12
         promptLb.centerY = viewHeight * 0.5
         promptArrow.centerY = viewHeight * 0.5
     }

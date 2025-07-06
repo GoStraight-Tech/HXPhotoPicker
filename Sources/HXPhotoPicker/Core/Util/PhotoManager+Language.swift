@@ -49,10 +49,6 @@ extension PhotoManager {
                 language = "fr"
             case .arabic:
                 language = "ar"
-            case .spanish:
-                language = "es"
-            case .portuguese:
-                language = "pt"
             case .custom(let bundle):
                 language = ""
                 languageBundle = bundle
@@ -113,11 +109,6 @@ extension PhotoManager {
             }else if preferredLanguage.hasPrefix("ar") {
                 language = "ar"
                 break
-            }else if preferredLanguage.hasPrefix("es") {
-                language = "es"
-                break
-            }else if preferredLanguage.hasPrefix("pt") {
-                language = "pt"
             }
         }
         return language

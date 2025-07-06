@@ -43,7 +43,7 @@ public class DeniedAuthorizationView: UIView, PhotoDeniedAuthorization {
             )
             navigationBar.shadowImage = UIImage()
             let navigationItem = UINavigationItem()
-            navigationItem.leftBarButtonItem = .initCustomView(customView: closeBtn)
+            navigationItem.leftBarButtonItem = UIBarButtonItem(customView: closeBtn)
             navigationBar.pushItem(navigationItem, animated: false)
             addSubview(navigationBar)
         }
