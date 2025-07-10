@@ -67,15 +67,6 @@ extension PHAsset {
         }
     }
     var isCloudPlaceholder: Bool? {
-        if #available(iOS 26.0, *) {
-            guard self.responds(to: NSSelectorFromString("isCloudPlaceholder")) else {
-                return nil
-            }
-            guard let isICloud = self.value(forKey: "isCloudPlaceholder") as? Bool else {
-                return nil
-            }
-            return isICloud
-        }
         if let isICloud = self.value(forKey: "isCloudPlaceholder") as? Bool {
             return isICloud
         }
