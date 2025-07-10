@@ -10,6 +10,24 @@ import AVFoundation
 
 public extension Array where Element: PhotoAsset {
     
+    func encode() throws -> [Data] {
+        var datas: [Data] = []
+        for photoAsset in self {
+            let data = try photoAsset.encode()
+            datas.append(data)
+        }
+        return datas
+    }
+    
+    static func decode(_ datas: [Data]) throws -> [PhotoAsset] {
+        var photoAssets: [PhotoAsset] = []
+        for data in datas {
+            let photoAsset = try PhotoAsset.decode(data: data)
+            photoAssets.append(photoAsset)
+        }
+        return photoAssets
+    }
+    
     /// 获取 image
     /// - Parameters:
     ///   - compressionScale: 压缩比例，获取系统相册里的资源时有效
@@ -200,9 +218,7 @@ public extension Array where Element: PhotoAsset {
                         mediatype = .video
                     }
                     #if HXPICKER_ENABLE_EDITOR
-                    if (photoAsset.mediaSubType == .livePhoto ||
-                        photoAsset.mediaSubType == .localLivePhoto) &&
-                        photoAsset.editedResult != nil {
+                    if photoAsset.mediaSubType.isLivePhoto && photoAsset.editedResult != nil {
                         mediatype = .photo
                     }
                     #endif
@@ -223,8 +239,7 @@ public extension Array where Element: PhotoAsset {
                         toVideoURL = fileConfig.videoURL
                     }
                     if mediatype == .photo {
-                        if photoAsset.mediaSubType == .livePhoto ||
-                            photoAsset.mediaSubType == .localLivePhoto {
+                        if photoAsset.mediaSubType.isLivePhoto {
                             photoAsset.getLivePhotoURL(
                                 imageFileURL: toImageURL,
                                 videoFileURL: toVideoURL,

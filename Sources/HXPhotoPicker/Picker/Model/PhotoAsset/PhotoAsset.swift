@@ -8,9 +8,6 @@
 
 import UIKit
 import Photos
-#if canImport(Kingfisher)
-import Kingfisher
-#endif
 
 public typealias PhotoAssetICloudHandler = (PhotoAsset, PHImageRequestID) -> Void
 public typealias PhotoAssetProgressHandler = (PhotoAsset, Double) -> Void
@@ -57,6 +54,14 @@ open class PhotoAsset: Equatable {
         }
     }
     #endif
+    
+    public var isEdited: Bool {
+        #if HXPICKER_ENABLE_EDITOR
+        editedResult != nil
+        #else
+        false
+        #endif
+    }
 
     /// 图片/视频文件大小
     /// 1000 = 1kb
@@ -103,9 +108,25 @@ open class PhotoAsset: Equatable {
     /// 选中时的下标
     public var selectIndex: Int = 0
     
+    /// 禁用HDR
+    public var isDisableHDR: Bool = false
+    
+    /// 禁用LivePhoto，禁用之后获取AssetURLResult里 livePhoto 会为 nil
+    public var isDisableLivePhoto: Bool = false
+    
+    /// LivePhoto静音
+    public var isLivePhotoMuted: Bool = false
+    
     public var isGifAsset: Bool { mediaSubType.isGif }
     public var isLocalAsset: Bool { mediaSubType.isLocal }
     public var isNetworkAsset: Bool { mediaSubType.isNetwork }
+    
+    public var identifier: String {
+        if let phAsset = phAsset {
+            return phAsset.localIdentifier
+        }
+        return localAssetIdentifier
+    }
     
     /// 根据系统相册里对应的 PHAsset 数据初始化
     /// - Parameter asset: 系统相册里对应的 PHAsset 数据
@@ -145,6 +166,10 @@ open class PhotoAsset: Equatable {
         }else {
             mediaSubType = .localImage
         }
+    }
+    
+    public convenience init(image: UIImage) {
+        self.init(localImageAsset: .init(image: image))
     }
     
     public convenience init(_ localImageAsset: LocalImageAsset) {
@@ -192,7 +217,6 @@ open class PhotoAsset: Equatable {
     /// 本地/网络Asset的唯一标识符
     public private(set) var localAssetIdentifier: String = UUID().uuidString
     
-    #if canImport(Kingfisher)
     /// 初始化网络图片
     /// - Parameter networkImageAsset: 对应网络图片的 NetworkImageAsset
     public init(networkImageAsset: NetworkImageAsset) {
@@ -212,7 +236,6 @@ open class PhotoAsset: Equatable {
     var localImageType: DonwloadURLType = .thumbnail
     
     var loadNetworkImageHandler: ((((PhotoAsset) -> Void)?) -> Void)?
-    #endif
     
     /// 网络视频
     public var networkVideoAsset: NetworkVideoAsset?
@@ -246,13 +269,6 @@ open class PhotoAsset: Equatable {
     var playerTime: CGFloat = 0
     var isScrolling = false
     var requestVideoDurationId: PHImageRequestID?
-    
-    var identifie: String {
-        if let phAsset = phAsset {
-            return phAsset.localIdentifier
-        }
-        return localAssetIdentifier
-    }
     
     public static func == (lhs: PhotoAsset, rhs: PhotoAsset) -> Bool {
         lhs.isEqual(rhs)
@@ -358,25 +374,27 @@ extension PhotoAsset {
                         size = image?.size
                         self.localLivePhoto?.size = size ?? .init(width: 200, height: 200)
                     }else {
-                        #if canImport(Kingfisher)
-                        if ImageCache.default.isCached(forKey: localLivePhoto.imageURL.cacheKey) {
-                            let cachePath = ImageCache.default.cachePath(forKey: localLivePhoto.imageURL.cacheKey)
-                            if let image = UIImage(contentsOfFile: cachePath) {
+                        if PhotoManager.ImageView.isCached(forKey: PhotoManager.ImageView.getCacheKey(forURL: localLivePhoto.imageURL)) {
+                            let cacheKey = PhotoManager.ImageView.getCacheKey(forURL: localLivePhoto.imageURL)
+                            let cacheImage = PhotoManager.ImageView.getInMemoryCacheImage(forKey: cacheKey)
+                            if let image = cacheImage {
                                 size = image.size
                                 self.localLivePhoto?.size = size ?? .init(width: 200, height: 200)
                             }
+//                            let cachePath = ImageCache.default.cachePath(forKey: localLivePhoto.imageURL.cacheKey)
+//                            if let image = UIImage(contentsOfFile: cachePath) {
+//                                size = image.size
+//                                self.localLivePhoto?.size = size ?? .init(width: 200, height: 200)
+//                            }
                         }
-                        #endif
                     }
                 }else {
                     size = localLivePhoto.size
                 }
             }else {
-                #if canImport(Kingfisher)
                 if let networkImageSize = networkImageAsset?.imageSize, !networkImageSize.equalTo(.zero) {
                     size = networkImageSize
                 }
-                #endif
             }
         }
         return size

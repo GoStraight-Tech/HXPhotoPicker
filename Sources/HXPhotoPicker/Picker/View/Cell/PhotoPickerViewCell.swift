@@ -62,14 +62,14 @@ open class PhotoPickerViewCell: PhotoPickerBaseViewCell {
         
         selectMaskLayer = CALayer()
         selectMaskLayer.backgroundColor = UIColor.black.withAlphaComponent(0.6).cgColor
-        selectMaskLayer.frame = bounds
+        selectMaskLayer.hxPicker_frame = bounds
         selectMaskLayer.isHidden = true
         photoView.layer.addSublayer(selectMaskLayer)
         
         assetTypeLb = UILabel()
         assetTypeLb.font = .mediumPingFang(ofSize: 14)
         assetTypeLb.textColor = .white
-        assetTypeLb.textAlignment = .right
+        assetTypeLb.hxpicker_alignment = .right
         contentView.addSubview(assetTypeLb)
         
         assetTypeIcon = UIImageView(image: .imageResource.picker.photoList.cell.video.image)
@@ -193,6 +193,7 @@ open class PhotoPickerViewCell: PhotoPickerBaseViewCell {
                 }
             }else {
                 if $0.downloadStatus != .canceled {
+                    self.disableMaskLayer.isHidden = false
                     self.loaddingView.isHidden = true
                     self.loaddingView.stopAnimating()
                 }
@@ -203,10 +204,10 @@ open class PhotoPickerViewCell: PhotoPickerBaseViewCell {
     /// 布局
     open override func layoutView() {
         super.layoutView()
-        iCloudMarkView.x = width - iCloudMarkView.width - 5
+        iCloudMarkView.hxPicker_x = width - iCloudMarkView.width - 5
         iCloudMarkView.y = 5
         
-        assetTypeMaskView.frame = CGRect(x: 0, y: photoView.height - 25, width: width, height: 25)
+        assetTypeMaskView.hxPicker_frame = CGRect(x: 0, y: photoView.height - 25, width: width, height: 25)
         let assetTypeMakeFrame = CGRect(
             x: 0,
             y: -5,
@@ -226,25 +227,30 @@ open class PhotoPickerViewCell: PhotoPickerBaseViewCell {
         if updateFrame {
             CATransaction.begin()
             CATransaction.setDisableActions(true)
-            assetTypeMaskLayer.frame = assetTypeMakeFrame
-            selectMaskLayer.frame = photoView.bounds
-            disableMaskLayer.frame = photoView.bounds
+            assetTypeMaskLayer.hxPicker_frame = assetTypeMakeFrame
+            selectMaskLayer.hxPicker_frame = photoView.bounds
+            disableMaskLayer.hxPicker_frame = photoView.bounds
             CATransaction.commit()
         }
-        assetTypeLb.frame = CGRect(x: 0, y: height - 19, width: width - 5, height: 18)
-        if let imageSize = assetTypeIcon.image?.size {
-            assetTypeIcon.size = imageSize
-        }
-        assetTypeIcon.x = 5
-        assetTypeIcon.y = height - assetTypeIcon.height - 5
-        assetTypeLb.centerY = assetTypeIcon.centerY
+        loaddingView.hxPicker_frame = bounds
+        setupAssetTypeFrame()
         if let imageSize = assetEditMarkIcon.image?.size {
             assetEditMarkIcon.size = imageSize
         }
-        assetEditMarkIcon.x = 5
+        assetEditMarkIcon.hxPicker_x = 5
         assetEditMarkIcon.y = height - assetEditMarkIcon.height - 5
-        
-        loaddingView.frame = bounds
+    }
+    
+    open func setupAssetTypeFrame() {
+        assetTypeLb.hxPicker_frame = CGRect(x: 0, y: height - 19, width: width - 5, height: 18)
+        if let imageSize = assetTypeIcon.image?.size {
+            assetTypeIcon.size = imageSize
+        }
+        //备注：很多适配RTL的工程都会Hook调整alignment，因此该处根据当前的alignment来调整图标的位置（避免遮挡）
+        let isAssetTypeLbInRight = assetTypeLb.hxpicker_alignment == .right
+        assetTypeIcon.hxPicker_x = isAssetTypeLbInRight ? 5 : (width - assetTypeIcon.width - 5)
+        assetTypeIcon.y = height - assetTypeIcon.height - 5
+        assetTypeLb.centerY = assetTypeIcon.centerY
     }
     
     /// 设置高亮时的遮罩
@@ -270,40 +276,17 @@ open class PhotoPickerViewCell: PhotoPickerBaseViewCell {
         }
     }
     
-    open override func cancelICloudRequest() {
-        super.cancelICloudRequest()
-        iCloudMarkView.isHidden = true
-    }
-    private var didLoadCompletion: Bool = false
-    
-    deinit {
-        disableMaskLayer.backgroundColor = nil
-        cancelSyncICloud()
-    }
-}
-
-// MARK: request
-extension PhotoPickerViewCell {
-    
-    func cancelGetVideoDuration() {
-        if let avAsset = videoDurationAsset {
-            avAsset.cancelLoading()
-            videoDurationAsset = nil
-        }
-    }
-}
-
-// MARK: private
-extension PhotoPickerViewCell {
-    
-    private func setupState() {
+    open func setupState() {
         if !didLoadCompletion {
             return
         }
+        assetTypeIcon.isHidden = true
         if photoAsset.isGifAsset {
             assetTypeLb.text = .textPhotoList.cell.gifTitle.text
             assetTypeMaskView.isHidden = false
         }else if photoAsset.mediaSubType.isVideo {
+            assetTypeIcon.isHidden = false
+            assetTypeIcon.image = .imageResource.picker.photoList.cell.video.image
             if let videoTime = photoAsset.videoTime {
                 assetTypeLb.text = videoTime
             }else {
@@ -323,9 +306,11 @@ extension PhotoPickerViewCell {
 //                assetTypeIcon.image = .imageResource.picker.photoList.cell.videoEdited.image
 //            }
 //            #endif
-        }else if photoAsset.mediaSubType == .livePhoto ||
-                    photoAsset.mediaSubType == .localLivePhoto {
+        }else if photoAsset.mediaSubType.isLivePhoto {
             assetTypeLb.text = .textPhotoList.cell.LivePhotoTitle.text
+            assetTypeMaskView.isHidden = false
+        }else if photoAsset.mediaSubType.isHDRPhoto {
+            assetTypeLb.text = .textPhotoList.cell.HDRPhotoTitle.text
             assetTypeMaskView.isHidden = false
         }else {
             assetTypeLb.text = nil
@@ -346,6 +331,28 @@ extension PhotoPickerViewCell {
             }
             #endif
         }
-        assetTypeIcon.isHidden = photoAsset.mediaType != .video
+    }
+    
+    open override func cancelICloudRequest() {
+        super.cancelICloudRequest()
+        iCloudMarkView.isHidden = true
+    }
+    
+    private var didLoadCompletion: Bool = false
+    
+    deinit {
+        disableMaskLayer.backgroundColor = nil
+        cancelSyncICloud()
+    }
+}
+
+// MARK: request
+extension PhotoPickerViewCell {
+    
+    func cancelGetVideoDuration() {
+        if let avAsset = videoDurationAsset {
+            avAsset.cancelLoading()
+            videoDurationAsset = nil
+        }
     }
 }

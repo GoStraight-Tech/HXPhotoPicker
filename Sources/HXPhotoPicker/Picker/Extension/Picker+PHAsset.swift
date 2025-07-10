@@ -27,7 +27,7 @@ extension PHAsset {
     var isLivePhoto: Bool {
         var isLivePhoto: Bool = false
         if #available(iOS 9.1, *) {
-            isLivePhoto = mediaSubtypes == .photoLive
+            isLivePhoto = mediaSubtypes.contains(.photoLive)
             if #available(iOS 11, *) {
                 if playbackStyle == .livePhoto {
                     isLivePhoto = true
@@ -35,6 +35,10 @@ extension PHAsset {
             }
         }
         return isLivePhoto
+    }
+    
+    var isHDR: Bool {
+        return mediaSubtypes.contains(.photoHDR) || mediaSubtypes.contains(.init(rawValue: 512))
     }
     
     /// 如果在获取到PHAsset之前还未下载的iCloud，之后下载了还是会返回存在
@@ -67,10 +71,13 @@ extension PHAsset {
         }
     }
     var isCloudPlaceholder: Bool? {
-        if let isICloud = self.value(forKey: "isCloudPlaceholder") as? Bool {
-            return isICloud
+        guard self.responds(to: NSSelectorFromString("isCloudPlaceholder")) else {
+            return nil
         }
-        return nil
+        guard let isICloud = self.value(forKey: "isCloudPlaceholder") as? Bool else {
+            return nil
+        }
+        return isICloud
     }
     var isLocallayAvailable: Bool {
         if let isCloud = isCloudPlaceholder, isCloud {

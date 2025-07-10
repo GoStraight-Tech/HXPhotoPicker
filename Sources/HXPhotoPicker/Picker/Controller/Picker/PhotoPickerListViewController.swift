@@ -96,7 +96,7 @@ open class PhotoPickerListViewController:
         collectionViewLayout = UICollectionViewFlowLayout()
         collectionViewLayout.minimumLineSpacing = config.spacing
         collectionViewLayout.minimumInteritemSpacing = config.spacing
-        collectionView = UICollectionView(frame: view.bounds, collectionViewLayout: collectionViewLayout)
+        collectionView = HXCollectionView(frame: view.bounds, collectionViewLayout: collectionViewLayout)
         collectionView.backgroundColor = .clear
         collectionView.dataSource = self
         collectionView.delegate = self
@@ -480,9 +480,7 @@ extension PhotoPickerListViewController: UICollectionViewDelegate {
         }
         #endif
         if cell is PhotoPickerLimitCell {
-            if #available(iOS 14, *) {
-                PHPhotoLibrary.shared().presentLimitedLibraryPicker(from: pickerController)
-            }
+            delegate?.photoList(didLimitCell: self)
             return
         }
         if let myCell = cell as? PhotoPickerBaseViewCell,
@@ -652,7 +650,12 @@ extension PhotoPickerListViewController: UICollectionViewDelegate {
                         photoAsset.editedResult = nil
                         cell.updatePhotoAsset(photoAsset)
                     }
-                    self.delegate?.photoList(self, updateAsset: photoAsset)
+                    if photoAsset.isSelected,
+                       !self.pickerController.pickerData.canSelect(photoAsset, isShowHUD: true) {
+                        self.pickerCell(cell, didSelectControl: photoAsset.isSelected)
+                    }else {
+                        self.delegate?.photoList(self, updateAsset: photoAsset)
+                    }
                 }
                 menus.append(removeEdit)
             }
@@ -896,6 +899,10 @@ extension PhotoPickerListViewController: PhotoPickerViewCellDelegate {
         }else {
             cell.canSelect = true
         }
+    }
+    
+    public func pickerCell(livePhotoContorlDidChange cell: PhotoPickerBaseViewCell) {
+        delegate?.photoList(self, updateAsset: cell.photoAsset)
     }
 }
 

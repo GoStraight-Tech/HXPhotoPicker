@@ -42,6 +42,7 @@ class PhotoPreviewSelectedView: UIView,
     
     var photoAssetArray: [PhotoAsset] = []
     private var currentSelectedIndexPath: IndexPath?
+    private let lock = NSLock()
     
     override init(frame: CGRect) {
         super.init(frame: frame)
@@ -49,7 +50,7 @@ class PhotoPreviewSelectedView: UIView,
         collectionViewLayout.scrollDirection = .horizontal
         collectionViewLayout.minimumLineSpacing = 5
         collectionViewLayout.minimumInteritemSpacing = 5
-        collectionView = UICollectionView(frame: bounds, collectionViewLayout: collectionViewLayout)
+        collectionView = HXCollectionView(frame: bounds, collectionViewLayout: collectionViewLayout)
         collectionView.backgroundColor = .clear
         collectionView.dataSource = self
         collectionView.delegate = self
@@ -103,25 +104,35 @@ class PhotoPreviewSelectedView: UIView,
         collectionView.reloadData()
     }
     func reloadData(photoAsset: PhotoAsset) {
-        if let index = photoAssetArray.firstIndex(of: photoAsset) {
-            collectionView.reloadItems(at: [IndexPath(item: index, section: 0)])
-            collectionView.selectItem(
-                at: currentSelectedIndexPath,
-                animated: false,
-                scrollPosition: .centeredHorizontally
-            )
+        guard let index = photoAssetArray.firstIndex(of: photoAsset) else {
+            return
         }
+        collectionView.reloadItems(at: [IndexPath(item: index, section: 0)])
+        if isPhotoList {
+           return
+        }
+        collectionView.selectItem(
+            at: currentSelectedIndexPath,
+            animated: false,
+            scrollPosition: .centeredHorizontally
+        )
     }
     
     func insertPhotoAsset(
         photoAsset: PhotoAsset,
         animations: (() -> Void)? = nil
     ) {
+        lock.lock()
+        defer { lock.unlock() }
         let beforeIsEmpty = photoAssetArray.isEmpty
         let item = photoAssetArray.count
         let indexPath = IndexPath(item: item, section: 0)
         photoAssetArray.append(photoAsset)
-        collectionView.insertItems(at: [indexPath])
+        if beforeIsEmpty {
+            collectionView.reloadData()
+        }else {
+            collectionView.insertItems(at: [indexPath])
+        }
         collectionView.selectItem(at: indexPath, animated: true, scrollPosition: .centeredHorizontally)
         currentSelectedIndexPath = indexPath
         if beforeIsEmpty {
@@ -157,7 +168,11 @@ class PhotoPreviewSelectedView: UIView,
             }
             
         }
-        collectionView.deleteItems(at: indexPaths)
+        if !indexPaths.isEmpty {
+            collectionView.deleteItems(at: indexPaths)
+        }else {
+            collectionView.reloadData()
+        }
         if !beforeIsEmpty && photoAssetArray.isEmpty {
             UIView.animate(withDuration: 0.25) {
                 self.alpha = 0

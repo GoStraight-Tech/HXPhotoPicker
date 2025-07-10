@@ -1,4 +1,87 @@
-# 更新日志 
+# 更新日志
+    
+## 5.0.2
+
+### 修复
+
+- [[797]](https://github.com/SilenceLove/HXPhotoPicker/issues/797)
+- [[792]](https://github.com/SilenceLove/HXPhotoPicker/issues/792)
+
+## 5.0.1
+
+### 新增
+
+- 西班牙、葡萄牙语言
+
+### 修复
+
+- [[787]](https://github.com/SilenceLove/HXPhotoPicker/issues/787) 
+- [[784]](https://github.com/SilenceLove/HXPhotoPicker/issues/784)  
+- [[782]](https://github.com/SilenceLove/HXPhotoPicker/issues/782) 
+- [[777]](https://github.com/SilenceLove/HXPhotoPicker/issues/777)
+- [[776]](https://github.com/SilenceLove/HXPhotoPicker/issues/776)
+- [[775]](https://github.com/SilenceLove/HXPhotoPicker/issues/775)
+
+## 5.0.0
+
+- 最低系统版本修改为`iOS 10`
+- 默认不支持GIF图片、网络图片加载支持自定义[HXImageViewProtocol](https://github.com/SilenceLove/HXPhotoPicker/blob/master/Sources/HXPhotoPicker/Core/Config/HXImageViewProtocol.swift)
+  - [GIF](https://github.com/SilenceLove/HXPhotoPicker/tree/master/Sources/ImageView/GIFImageView.swift)
+  - [Kingfisher](https://github.com/SilenceLove/HXPhotoPicker/tree/master/Sources/ImageView/KFImageView.swift)
+  - [SDWebImage](https://github.com/SilenceLove/HXPhotoPicker/tree/master/Sources/ImageView/SDImageView.swift)
+- 优化RLT布局
+  
+## 4.2.5
+
+### 修复
+
+- [[766]](https://github.com/SilenceLove/HXPhotoPicker/issues/766)
+- [[754]](https://github.com/SilenceLove/HXPhotoPicker/issues/754)
+- [[751]](https://github.com/SilenceLove/HXPhotoPicker/issues/751)
+
+## 4.2.4
+
+### 新增
+
+- 最低系统版本升级为`iOS 13`
+- `Kingfisher`升级为`8.0`
+
+## 4.2.3.2
+
+### 修复
+
+- [[727]](https://github.com/SilenceLove/HXPhotoPicker/issues/727)
+- [[730]](https://github.com/SilenceLove/HXPhotoPicker/issues/730)
+- [[731]](https://github.com/SilenceLove/HXPhotoPicker/issues/731)
+- [[732]](https://github.com/SilenceLove/HXPhotoPicker/issues/732)
+
+## 4.2.3.1
+
+### 修复
+
+- picker
+  - 权限受限时系统相册更新后未同步
+
+## 4.2.3
+
+### 新增
+
+- Camera
+  - 相机界面支持自定义`CameraViewControllerProtocol`
+
+### 修复
+
+- picker
+  - 系统相册删除照片后可能未同步
+
+- Editor
+  - 旋转、镜像时可能无效
+
+## 4.2.2
+
+### 修复
+
+- [[705]](https://github.com/SilenceLove/HXPhotoPicker/issues/705)
 
 ## 4.2.1
 
