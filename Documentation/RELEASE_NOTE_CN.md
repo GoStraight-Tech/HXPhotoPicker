@@ -1,5 +1,25 @@
 # 更新日志
     
+## 5.0.5
+
+- 优化适配`iOS 26`
+
+### 修复
+
+- [[847]](https://github.com/SilenceLove/HXPhotoPicker/issues/847)
+- [[840]](https://github.com/SilenceLove/HXPhotoPicker/issues/840)
+- 以及一些bug...
+    
+## 5.0.4
+
+- 兼容`iOS 26`
+
+### 修复
+
+- [[820]](https://github.com/SilenceLove/HXPhotoPicker/issues/820)
+- [[819]](https://github.com/SilenceLove/HXPhotoPicker/issues/819)
+- 以及一些bug...
+    
 ## 5.0.3
 
 ### 新增

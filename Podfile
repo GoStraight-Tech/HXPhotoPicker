@@ -1,4 +1,4 @@
-source 'https://github.com/CocoaPods/Specs.git'
+# source 'https://github.com/CocoaPods/Specs.git'
 platform:ios,'10.0'
 
 install! 'cocoapods',
@@ -15,7 +15,6 @@ target "HXPhotoPickerExample" do
   
 #  pod 'SwiftLint' Run Script "${PODS_ROOT}/SwiftLint/swiftlint"
 #  pod 'GDPerformanceView-Swift'
-#  pod 'GPUImage'
 end
 
 target "SwiftUIExample" do

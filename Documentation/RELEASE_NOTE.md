@@ -1,8 +1,28 @@
 # Release Notes
     
+## 5.0.5
+
+- Compatible with `iOS 26`
+
+### Resolved
+
+- [[847]](https://github.com/SilenceLove/HXPhotoPicker/issues/847)
+- [[840]](https://github.com/SilenceLove/HXPhotoPicker/issues/840)
+- And some bugs...
+    
+## 5.0.4
+
+- Compatible with `iOS 26`
+
+### Resolved
+
+- [[820]](https://github.com/SilenceLove/HXPhotoPicker/issues/820)
+- [[819]](https://github.com/SilenceLove/HXPhotoPicker/issues/819)
+- And some bugs...
+    
 ## 5.0.3
 
-### 新增
+### Add
 
 - Picker
   - Added the ability to control the playback/mute of `LivePhoto`

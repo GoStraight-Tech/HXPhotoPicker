@@ -1,6 +1,6 @@
 Pod::Spec.new do |spec|
     spec.name               = "HXPhotoPicker"
-    spec.version            = "5.0.3"
+    spec.version            = "5.0.5"
     spec.summary            = "照片/视频选择器 - 支持LivePhoto、GIF图片选择、自定义编辑照片/视频、3DTouch预览、浏览网络图片/网络视频 功能 - Imitation weibo photo/image picker - support for LivePhoto, GIF image selection, 3DTouch preview, browse the web image function"
     spec.homepage           = "https://github.com/SilenceLove/HXPhotoPicker"
     spec.license            = { :type => "MIT", :file => "LICENSE" }
@@ -46,7 +46,7 @@ Pod::Spec.new do |spec|
     
     spec.subspec 'Camera' do |camera|
         camera.subspec 'Lite' do |lite|
-            lite.source_files   = "Sources/HXPhotoPicker/Camera/**/*.{swift,metal}"
+            lite.source_files   = "Sources/HXPhotoPicker/Camera/**/*.{swift}"
             lite.dependency 'HXPhotoPicker/Core'
             lite.pod_target_xcconfig = { 'SWIFT_ACTIVE_COMPILATION_CONDITIONS' => 'HXPICKER_ENABLE_CAMERA' }
         end
