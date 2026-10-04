@@ -33,6 +33,8 @@ public class PhotoPickerViewController: PhotoBaseViewController {
     var appropriatePlaceAsset: PhotoAsset?
     var navigationBarHeight: CGFloat?
     weak var finishItem: PhotoNavigationItem?
+    // 旋转会重建导航按钮，弱引用避免保留旧实例。
+    private var duoNavigationButtons: NSHashTable<UIButton>?
     
     public override func viewDidLoad() {
         super.viewDidLoad()
@@ -73,6 +75,9 @@ public class PhotoPickerViewController: PhotoBaseViewController {
     
     public override func viewDidLayoutSubviews() {
         super.viewDidLayoutSubviews()
+        if weakController?.isDuoDevice == true {
+            titleView?.setNeedsLayout()
+        }
         if isDisableLayout {
             isDisableLayout = false
             return
@@ -196,6 +201,8 @@ public class PhotoPickerViewController: PhotoBaseViewController {
     
     public override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
+        updateDuoNavigationButtonColors()
+        updateDuoNavigationTitleLayout()
         if isShowToolbar {
             photoToolbar?.viewWillAppear(self)
         }
@@ -254,7 +261,45 @@ extension PhotoPickerViewController {
     }
     
     func initTitleView() {
+        if #available(iOS 26.0, *), let titleView = titleView as? AlbumGlassTitleView {
+            configureDuoNavigationButton(titleView.button)
+        }
         navigationItem.titleView = titleView
+        updateDuoNavigationTitleLayout()
+    }
+
+    func updateDuoNavigationTitleLayout() {
+        if #available(iOS 26.0, *), let titleView = titleView as? AlbumGlassTitleView {
+            titleView.horizontalCenterReferenceView = weakController?.isDuoDevice == true ? view : nil
+        }
+    }
+
+    private func configureDuoNavigationButton(_ button: UIButton) {
+        #if compiler(>=6.4)
+        if #available(iOS 27.1, *), let configuration = button.configuration {
+            if duoNavigationButtons == nil {
+                duoNavigationButtons = .weakObjects()
+            }
+            duoNavigationButtons?.add(button)
+            let originalForegroundColor = configuration.baseForegroundColor
+            let originalUpdateHandler = button.configurationUpdateHandler
+            button.configurationUpdateHandler = { [weak self] button in
+                originalUpdateHandler?(button)
+                let isDuoDevice = self?.weakController?.isDuoDevice == true
+                // 玻璃按钮的文字和模板图标由 configuration 的前景色控制。
+                button.configuration?.baseForegroundColor = isDuoDevice ? .white : originalForegroundColor
+            }
+            button.setNeedsUpdateConfiguration()
+        }
+        #endif
+    }
+
+    func updateDuoNavigationButtonColors() {
+        if #available(iOS 15.0, *), let duoNavigationButtons {
+            for button in duoNavigationButtons.allObjects {
+                button.setNeedsUpdateConfiguration()
+            }
+        }
     }
     
     func initNavItems(_ addFilter: Bool = true) {
@@ -272,10 +317,18 @@ extension PhotoPickerViewController {
                    !UIDevice.isPortrait {
                     continue
                 }
+                if let cancelView = view as? PhotoImageCancelItemView {
+                    configureDuoNavigationButton(cancelView.button)
+                }else if let cancelView = view as? PhotoTextCancelItemView {
+                    configureDuoNavigationButton(cancelView.button)
+                }
             }
             if view.itemType == .filter {
                 if !addFilter || !config.isShowFilterItem {
                     continue
+                }
+                if let filterView = view as? PhotoPickerFilterItemView {
+                    configureDuoNavigationButton(filterView.button)
                 }
                 if !isLeft, config.rightNavigationItems.count > 1, view.size.width < 25 {
                     view.width += 10

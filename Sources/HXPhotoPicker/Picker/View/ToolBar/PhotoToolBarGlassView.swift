@@ -9,6 +9,30 @@
 import UIKit
 
 @available(iOS 26.0, *)
+private final class PhotoPickerEdgeToolbar: UIToolbar {
+    var ignoresTrailingSafeAreaInset = false {
+        didSet {
+            if ignoresTrailingSafeAreaInset != oldValue {
+                setNeedsLayout()
+            }
+        }
+    }
+
+    override var safeAreaInsets: UIEdgeInsets {
+        var insets = super.safeAreaInsets
+        if ignoresTrailingSafeAreaInset {
+            // 仅解除完成按钮一侧的侧栏预留，保留底部安全区和工具栏自身边距。
+            if effectiveUserInterfaceLayoutDirection == .rightToLeft {
+                insets.left = 0
+            }else {
+                insets.right = 0
+            }
+        }
+        return insets
+    }
+}
+
+@available(iOS 26.0, *)
 public class PhotoToolBarGlassView: UIView, PhotoToolBar {
     
     public weak var toolbarDelegate: PhotoToolBarDelegate?
@@ -77,11 +101,12 @@ public class PhotoToolBarGlassView: UIView, PhotoToolBar {
     private var previewListView: PhotoPreviewListView!
     private var previewShadeView: UIView!
     private var previewShadeMaskLayer: CAGradientLayer!
-    private var contentView: UIToolbar!
+    private var contentView: PhotoPickerEdgeToolbar!
     private var previewBtn: UIBarButtonItem!
     private var originalItem: UIBarButtonItem!
     private var originalBtn: UIButton!
     private var finishBtn: UIBarButtonItem!
+    private var didApplyDuoButtonTitleColors = false
     
     private var isShowPrompt: Bool {
         type == .picker &&
@@ -122,7 +147,7 @@ public class PhotoToolBarGlassView: UIView, PhotoToolBar {
         self.type = type
         super.init(frame: .zero)
         
-        contentView = UIToolbar(frame: CGRect(x: 0, y: 0, width: width, height: 50 + UIDevice.bottomMargin))
+        contentView = PhotoPickerEdgeToolbar(frame: CGRect(x: 0, y: 0, width: width, height: 50 + UIDevice.bottomMargin))
         let viewConfig: PickerBottomViewConfiguration
         if type == .picker {
             if pickerConfig.selectMode != .single {
@@ -501,6 +526,12 @@ public class PhotoToolBarGlassView: UIView, PhotoToolBar {
     
     public override func layoutSubviews() {
         super.layoutSubviews()
+        let controller = toolbarDelegate as? PhotoBaseViewController
+        let isDuoPicker = type != .browser && controller?.weakController?.isDuoDevice == true
+        contentView.ignoresTrailingSafeAreaInset = isDuoPicker
+        if isDuoPicker {
+            applyDuoButtonTitleColorsIfNeeded()
+        }
         contentView.x = 0
         contentView.width = width
         contentView.height = 50 + UIDevice.bottomMargin
@@ -720,6 +751,24 @@ extension PhotoToolBarGlassView: PhotoPreviewListViewDataSource {
 }
 @available(iOS 26.0, *)
 extension PhotoToolBarGlassView {
+
+    private func applyDuoButtonTitleColorsIfNeeded() {
+        guard !didApplyDuoButtonTitleColors else { return }
+        didApplyDuoButtonTitleColors = true
+        let titleColor: UIColor = type == .preview ? .label : .white
+        let titleColors: [(UIControl.State, UIColor)] = [
+            (.normal, titleColor),
+            (.highlighted, titleColor),
+            (.disabled, titleColor.withAlphaComponent(0.4))
+        ]
+        for item in [previewBtn, finishBtn].compactMap({ $0 }) {
+            for (state, color) in titleColors {
+                var attributes = item.titleTextAttributes(for: state) ?? [:]
+                attributes[.foregroundColor] = color
+                item.setTitleTextAttributes(attributes, for: state)
+            }
+        }
+    }
     
     func configColor() {
         let config = type == .picker ? pickerConfig.photoList.bottomView : pickerConfig.previewView.bottomView

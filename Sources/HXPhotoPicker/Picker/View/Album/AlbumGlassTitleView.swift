@@ -25,6 +25,14 @@ public class AlbumGlassTitleView: UIView, PhotoPickerNavigationTitle {
     }
     
     public var titleColor: UIColor?
+
+    weak var horizontalCenterReferenceView: UIView? {
+        didSet {
+            if horizontalCenterReferenceView !== oldValue {
+                updateFrame()
+            }
+        }
+    }
     
     public var isSelected: Bool = false {
         didSet {
@@ -42,7 +50,20 @@ public class AlbumGlassTitleView: UIView, PhotoPickerNavigationTitle {
     }
     
     public override var intrinsicContentSize: CGSize {
-        contentSize
+        var size = contentSize
+        if horizontalCenterReferenceView != nil {
+            // 标题容器占用导航栏允许的宽度，按钮仍保持内容尺寸。
+            size.width = UIView.layoutFittingExpandedSize.width
+        }
+        return size
+    }
+
+    public override func sizeThatFits(_ size: CGSize) -> CGSize {
+        guard let referenceView = horizontalCenterReferenceView else {
+            return super.sizeThatFits(size)
+        }
+        let width = size.width > 0 ? min(size.width, referenceView.bounds.width) : referenceView.bounds.width
+        return CGSize(width: width, height: contentSize.height)
     }
     
     var button: UIButton!
@@ -141,13 +162,41 @@ public class AlbumGlassTitleView: UIView, PhotoPickerNavigationTitle {
     }
     
     public func updateFrame() {
-        size = contentSize
+        if horizontalCenterReferenceView == nil {
+            size = contentSize
+        }
         invalidateIntrinsicContentSize()
+        setNeedsLayout()
+    }
+
+    public override func didMoveToWindow() {
+        super.didMoveToWindow()
+        if horizontalCenterReferenceView != nil {
+            setNeedsLayout()
+        }
     }
     
     public override func layoutSubviews() {
         super.layoutSubviews()
-        button.frame = bounds
+        guard let referenceView = horizontalCenterReferenceView,
+              let window, referenceView.window === window else {
+            button.frame = bounds
+            return
+        }
+        // 按页面中心定位，而不是按扣除了非对称安全区的标题区域定位。
+        let referenceCenter = CGPoint(x: referenceView.bounds.midX, y: referenceView.bounds.midY)
+        let centerX = convert(referenceCenter, from: referenceView).x
+        let availableWidth = max(0, 2 * min(centerX - bounds.minX, bounds.maxX - centerX))
+        let width = min(contentSize.width, availableWidth)
+        button.frame = CGRect(x: centerX - width / 2, y: bounds.minY, width: width, height: bounds.height)
+    }
+
+    public override func point(inside point: CGPoint, with event: UIEvent?) -> Bool {
+        guard horizontalCenterReferenceView != nil else {
+            return super.point(inside: point, with: event)
+        }
+        // 扩大的标题容器不拦截按钮以外的导航栏点击。
+        return button.point(inside: button.convert(point, from: self), with: event)
     }
 
     required init?(coder: NSCoder) {

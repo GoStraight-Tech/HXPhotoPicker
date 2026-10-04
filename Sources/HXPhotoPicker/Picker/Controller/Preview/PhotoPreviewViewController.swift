@@ -142,6 +142,7 @@ public class PhotoPreviewViewController: PhotoBaseViewController {
     }
     public override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
+        updateDuoPreviewLayout()
         if isShowToolbar {
             photoToolbar.viewWillAppear(self)
         }
@@ -403,6 +404,23 @@ extension PhotoPreviewViewController {
         //强制LTR，避免阿语下预览图片内容被镜像
         view.semanticContentAttribute = .forceLeftToRight
         collectionView.semanticContentAttribute = .forceLeftToRight
+        updateDuoPreviewLayout()
+    }
+
+    func updateDuoPreviewLayout() {
+        guard isViewLoaded else { return }
+        photoToolbar?.setNeedsLayout()
+        #if compiler(>=6.4)
+        if #available(iOS 27.1, *),
+           weakController?.isDuoDevice == true,
+           previewType != .browser,
+           pickerConfig.isMultipleSelect,
+           let selectBoxItem,
+           selectBoxItem.axisBehavior != .verticalPreferred {
+            // 保留原导航按钮，让系统在 Duo 竖向导航栏中排列在返回按钮下方。
+            selectBoxItem.axisBehavior = .verticalPreferred
+        }
+        #endif
     }
     
     func configBottomViewFrame() {

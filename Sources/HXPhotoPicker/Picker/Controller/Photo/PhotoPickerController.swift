@@ -192,9 +192,49 @@ open class PhotoPickerController: UINavigationController {
         }
         return config.statusBarStyle
     }
+
+    private var hasDeviceHinge = false
+
+    var isDuoDevice: Bool {
+        #if compiler(>=6.4)
+        if #available(iOS 27.1, *),
+           traitCollection.userInterfaceIdiom == .phone {
+            // 侧边栏会随方向消失；设备的铰链信息不随旋转改变。
+            return hasDeviceHinge || traitCollection.verticalBarEdge != .unspecified
+        }
+        #endif
+        return false
+    }
+
+    private var shouldHidePhotoListStatusBar: Bool {
+        topViewController is PhotoPickerViewController && isDuoDevice
+    }
+
+    private func updateDuoAppearance() {
+        if topViewController is PhotoPickerViewController {
+            setNeedsStatusBarAppearanceUpdate()
+        }
+        pickerViewController?.updateDuoNavigationButtonColors()
+        pickerViewController?.updateDuoNavigationTitleLayout()
+        pickerViewController?.photoToolbar?.setNeedsLayout()
+        previewViewController?.updateDuoPreviewLayout()
+    }
+
+    open override var modalPresentationCapturesStatusBarAppearance: Bool {
+        get {
+            // Duo 照片列表以覆盖全屏方式展示时，也由当前页面控制状态栏。
+            if modalPresentationStyle == .overFullScreen && shouldHidePhotoListStatusBar {
+                return true
+            }
+            return super.modalPresentationCapturesStatusBarAppearance
+        }
+        set {
+            super.modalPresentationCapturesStatusBarAppearance = newValue
+        }
+    }
     
     open override var prefersStatusBarHidden: Bool {
-        if config.prefersStatusBarHidden {
+        if config.prefersStatusBarHidden || shouldHidePhotoListStatusBar {
             return true
         }else {
             if let prefersStatusBarHidden = topViewController?.prefersStatusBarHidden {
@@ -221,6 +261,24 @@ open class PhotoPickerController: UINavigationController {
     
     open override func viewDidLoad() {
         super.viewDidLoad()
+        #if compiler(>=6.4)
+        if #available(iOS 27.1, *), previewType != .browser {
+            let hingeInteraction = UIHingeInteraction { [weak self] interaction, update in
+                guard let self, update.hinge != nil else { return }
+                self.hasDeviceHinge = true
+                // 只需识别设备，无需持续监听折叠角度。
+                interaction.isEnabled = false
+                self.updateDuoAppearance()
+            }
+            view.addInteraction(hingeInteraction)
+            registerForTraitChanges(UITraitCollection.systemTraitsAffectingVerticalBarEdge) {
+                (controller: PhotoPickerController, previousTraits: UITraitCollection) in
+                if controller.traitCollection.verticalBarEdge != previousTraits.verticalBarEdge {
+                    controller.updateDuoAppearance()
+                }
+            }
+        }
+        #endif
         if PhotoManager.isRTL {
             navigationBar.semanticContentAttribute = .forceRightToLeft
         }else {

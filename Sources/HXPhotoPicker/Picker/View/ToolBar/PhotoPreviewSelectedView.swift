@@ -154,11 +154,14 @@ class PhotoPreviewSelectedView: UIView,
         let beforeIsEmpty = photoAssetArray.isEmpty
         let item = photoAssetArray.count
         let indexPath = IndexPath(item: item, section: 0)
-        photoAssetArray.append(photoAsset)
         if beforeIsEmpty {
+            photoAssetArray.append(photoAsset)
             collectionView.reloadData()
         }else {
-            collectionView.insertItems(at: [indexPath])
+            collectionView.performBatchUpdates {
+                self.photoAssetArray.append(photoAsset)
+                self.collectionView.insertItems(at: [indexPath])
+            }
         }
         collectionView.selectItem(at: indexPath, animated: true, scrollPosition: .centeredHorizontally)
         currentSelectedIndexPath = indexPath
@@ -179,33 +182,35 @@ class PhotoPreviewSelectedView: UIView,
         if photoAssets.isEmpty {
             return
         }
-        let beforeIsEmpty = photoAssetArray.isEmpty
-        var indexPaths: [IndexPath] = []
-        let tempAssets = photoAssetArray
+        var removedIndices = IndexSet()
         for photoAsset in photoAssets {
-            guard let item = photoAssetArray.firstIndex(of: photoAsset) else {
-                continue
+            if let item = photoAssetArray.firstIndex(of: photoAsset) {
+                removedIndices.insert(item)
             }
-            if let indexPath = currentSelectedIndexPath, item == indexPath.item {
-                currentSelectedIndexPath = nil
-            }
-            photoAssetArray.remove(at: item)
-            if let item = tempAssets.firstIndex(of: photoAsset) {
-                indexPaths.append(.init(item: item, section: 0))
-            }
-            
         }
-        if !indexPaths.isEmpty {
-            collectionView.deleteItems(at: indexPaths)
-        }else {
-            collectionView.reloadData()
+        guard !removedIndices.isEmpty else { return }
+        let indexPaths = removedIndices.map { IndexPath(item: $0, section: 0) }
+        // UIKit 可能先查询删除前的布局；数据必须在更新批次内同步修改。
+        collectionView.performBatchUpdates {
+            for item in removedIndices.reversed() {
+                self.photoAssetArray.remove(at: item)
+            }
+            if let indexPath = self.currentSelectedIndexPath {
+                if removedIndices.contains(indexPath.item) {
+                    self.currentSelectedIndexPath = nil
+                }else {
+                    let shift = removedIndices.count(in: 0..<indexPath.item)
+                    self.currentSelectedIndexPath = IndexPath(item: indexPath.item - shift, section: indexPath.section)
+                }
+            }
+            self.collectionView.deleteItems(at: indexPaths)
         }
-        if !beforeIsEmpty && photoAssetArray.isEmpty {
+        if photoAssetArray.isEmpty {
             UIView.animate(withDuration: 0.25) {
                 self.alpha = 0
                 animations?()
             } completion: { (isFinish) in
-                if isFinish {
+                if isFinish && self.photoAssetArray.isEmpty {
                     self.isHidden = true
                 }
             }
@@ -267,8 +272,7 @@ class PhotoPreviewSelectedView: UIView,
         layout collectionViewLayout: UICollectionViewLayout,
         sizeForItemAt indexPath: IndexPath
     ) -> CGSize {
-        let photoAsset = photoAssetArray[indexPath.item]
-        return getItemSize(photoAsset: photoAsset)
+        return getItemSize()
     }
     func collectionView(
         _ collectionView: UICollectionView,
@@ -278,19 +282,9 @@ class PhotoPreviewSelectedView: UIView,
         let myCell = cell as! PhotoPreviewSelectedViewCell
         myCell.cancelRequest()
     }
-    func getItemSize(photoAsset: PhotoAsset) -> CGSize {
-        let minWidth: CGFloat = 70 - collectionViewLayout.sectionInset.top - collectionViewLayout.sectionInset.bottom
-//        let maxWidth: CGFloat = minWidth / 9 * 16
-        let maxHeight: CGFloat = minWidth
-//        let aspectRatio = maxHeight / photoAsset.imageSize.height
-        let itemHeight = maxHeight
-//        var itemWidth = photoAsset.imageSize.width * aspectRatio
-//        if itemWidth < minWidth {
-           let itemWidth = minWidth
-//        }else if itemWidth > maxWidth {
-//            itemWidth = maxWidth
-//        }
-        return CGSize(width: itemWidth, height: itemHeight)
+    func getItemSize() -> CGSize {
+        let side: CGFloat = 70 - collectionViewLayout.sectionInset.top - collectionViewLayout.sectionInset.bottom
+        return CGSize(width: side, height: side)
     }
     
     func collectionView(_ collectionView: UICollectionView, canEditItemAt indexPath: IndexPath) -> Bool {
