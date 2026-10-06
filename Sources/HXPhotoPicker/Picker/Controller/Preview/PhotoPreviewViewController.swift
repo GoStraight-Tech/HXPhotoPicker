@@ -410,7 +410,7 @@ extension PhotoPreviewViewController {
     func updateDuoPreviewLayout() {
         guard isViewLoaded else { return }
         photoToolbar?.setNeedsLayout()
-        #if compiler(>=6.4)
+        #if compiler(>=6.4) && !targetEnvironment(macCatalyst)
         if #available(iOS 27.1, *),
            weakController?.isDuoDevice == true,
            previewType != .browser,

@@ -196,7 +196,8 @@ open class PhotoPickerController: UINavigationController {
     private var hasDeviceHinge = false
 
     var isDuoDevice: Bool {
-        #if compiler(>=6.4)
+        // Mac Catalyst SDK 不提供 Duo 的铰链和竖向栏接口。
+        #if compiler(>=6.4) && !targetEnvironment(macCatalyst)
         if #available(iOS 27.1, *),
            traitCollection.userInterfaceIdiom == .phone {
             // 侧边栏会随方向消失；设备的铰链信息不随旋转改变。
@@ -261,7 +262,7 @@ open class PhotoPickerController: UINavigationController {
     
     open override func viewDidLoad() {
         super.viewDidLoad()
-        #if compiler(>=6.4)
+        #if compiler(>=6.4) && !targetEnvironment(macCatalyst)
         if #available(iOS 27.1, *), previewType != .browser {
             let hingeInteraction = UIHingeInteraction { [weak self] interaction, update in
                 guard let self, update.hinge != nil else { return }

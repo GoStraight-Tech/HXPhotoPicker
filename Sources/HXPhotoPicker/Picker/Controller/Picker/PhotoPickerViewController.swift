@@ -275,7 +275,7 @@ extension PhotoPickerViewController {
     }
 
     private func configureDuoNavigationButton(_ button: UIButton) {
-        #if compiler(>=6.4)
+        #if compiler(>=6.4) && !targetEnvironment(macCatalyst)
         if #available(iOS 27.1, *), let configuration = button.configuration {
             if duoNavigationButtons == nil {
                 duoNavigationButtons = .weakObjects()
